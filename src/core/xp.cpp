@@ -1461,12 +1461,13 @@ uint8_t XP::getAchievementCount() {
 // Unlockables (v0.1.8) - secret challenges
 void XP::setUnlockable(uint8_t bitIndex) {
     if (bitIndex >= 32) return;  // Only 32 bits available
-    data.unlockables |= (1UL << bitIndex);
     if (achQueueMutex != nullptr && xSemaphoreTake(achQueueMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        data.unlockables |= (1UL << bitIndex);
         pendingSaveFlag = true;
         xSemaphoreGive(achQueueMutex);
     } else {
-        pendingSaveFlag = true;  // best-effort if mutex unavailable
+        data.unlockables |= (1UL << bitIndex);  // best-effort if mutex unavailable
+        pendingSaveFlag = true;
     }
 }
 

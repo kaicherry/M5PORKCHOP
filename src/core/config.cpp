@@ -793,6 +793,7 @@ bool Config::loadPersonality() {
 
     personalityConfig.mood = doc["mood"] | 50;
     if (personalityConfig.mood > 100) personalityConfig.mood = 100;
+    if (personalityConfig.mood < -100) personalityConfig.mood = -100;
     personalityConfig.experience = doc["experience"] | 0;
     personalityConfig.curiosity = doc["curiosity"] | 0.7f;
     if (personalityConfig.curiosity < 0.0f || personalityConfig.curiosity > 1.0f) personalityConfig.curiosity = 0.7f;

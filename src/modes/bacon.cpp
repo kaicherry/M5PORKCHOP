@@ -322,6 +322,7 @@ void BaconMode::updateAsyncScan() {
 
         if (maxIdx >= 0) {
             uint8_t* bssid = WiFi.BSSID(maxIdx);
+            if (!bssid) continue;
             memcpy(apFingerprint[apCount].bssid, bssid, 6);
             apFingerprint[apCount].rssi = WiFi.RSSI(maxIdx);
             apFingerprint[apCount].channel = WiFi.channel(maxIdx);
