@@ -57,7 +57,7 @@ DNHState DoNoHamMode::state = DNHState::HOPPING;
 uint8_t DoNoHamMode::currentChannel = 1;
 uint8_t DoNoHamMode::channelIndex = 0;
 uint32_t DoNoHamMode::dwellStartTime = 0;
-bool DoNoHamMode::dwellResolved = false;
+volatile bool DoNoHamMode::dwellResolved = false;
 
 // networks vector moved to NetworkRecon - use networks() helper below
 std::vector<CapturedPMKID> DoNoHamMode::pmkids;
@@ -1170,6 +1170,7 @@ void DoNoHamMode::saveAllHandshakes() {
 
         // Copy and zero MIC
         uint8_t eapolCopy[512];
+        if (eapolLen < 97) continue;  // need >=97 bytes for MIC at offset 81+16
         memcpy(eapolCopy, eapolFrame->data, eapolLen);
         memset(eapolCopy + 81, 0, 16);
 

@@ -1891,7 +1891,6 @@ void SpectrumMode::onBeacon(const uint8_t* bssid, uint8_t channel, bool channelT
                 if (!pendingReveal) {
                     strncpy(pendingRevealSSID, ssid, 32);
                     pendingRevealSSID[32] = 0;
-                    pendingRevealSSID[33] = 0; // Extra safety null terminator
                     pendingReveal = true;
                 }
             }
@@ -2192,11 +2191,15 @@ void SpectrumMode::detectPMFBits(const uint8_t* payload, uint16_t len, bool& mfp
             if (rsnOffset + 2 > rsnEnd) break;
 
             uint16_t pairwiseCount = payload[rsnOffset] | (payload[rsnOffset + 1] << 8);
-            rsnOffset += 2 + (pairwiseCount * 4);
+            { uint32_t skip = 2u + (uint32_t)pairwiseCount * 4u;
+              if (skip > (uint32_t)(rsnEnd - rsnOffset)) break;
+              rsnOffset += (uint16_t)skip; }
             if (rsnOffset + 2 > rsnEnd) break;
 
             uint16_t akmCount = payload[rsnOffset] | (payload[rsnOffset + 1] << 8);
-            rsnOffset += 2 + (akmCount * 4);
+            { uint32_t skip = 2u + (uint32_t)akmCount * 4u;
+              if (skip > (uint32_t)(rsnEnd - rsnOffset)) break;
+              rsnOffset += (uint16_t)skip; }
             if (rsnOffset + 2 > rsnEnd) break;
 
             // RSN Capabilities - IEEE 802.11-2016 Table 9-133

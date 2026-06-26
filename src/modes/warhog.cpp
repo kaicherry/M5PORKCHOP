@@ -114,7 +114,7 @@ char WarhogMode::currentFilename[128] = {0};
 char WarhogMode::currentWigleFilename[128] = {0};
 
 // Scan state
-bool WarhogMode::scanInProgress = false;
+volatile bool WarhogMode::scanInProgress = false;
 uint32_t WarhogMode::scanStartTime = 0;
 
 // Background scan task statics
@@ -702,7 +702,7 @@ void WarhogMode::processScanResults() {
 
         // Mark as seen and update bounty reservoir before any file writes
         bloomAdd(seenBloom, SEEN_BLOOM_MASK, SEEN_BLOOM_HASHES, bssidKey);
-        bountySeenTotal++;
+        if (bountySeenTotal < UINT32_MAX) bountySeenTotal++;
         if (bountyPoolCount < BOUNTY_POOL_SIZE) {
             bountyPool[bountyPoolCount++] = bssidKey;
         } else {

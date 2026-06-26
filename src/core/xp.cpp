@@ -1313,20 +1313,18 @@ void XP::unlockAchievement(PorkAchievement ach) {
     // Queue achievement for celebration (prevents cascade of sounds)
     // Celebration happens in processAchievementQueue() called from main loop
     if (initialized) {
-        // Protect the queue with mutex
         if (achQueueMutex != nullptr && xSemaphoreTake(achQueueMutex, portMAX_DELAY) == pdTRUE) {
             uint8_t nextHead = (achQueueHead + 1) % ACH_QUEUE_SIZE;
             if (nextHead != achQueueTail) {  // Not full
                 achQueue[achQueueHead] = ach;
                 achQueueHead = nextHead;
             }
+            pendingSaveFlag = true;
             xSemaphoreGive(achQueueMutex);
         }
+    } else {
+        pendingSaveFlag = true;  // pre-init path, no mutex needed yet
     }
-    
-    // Defer save to avoid SD writes during active WiFi mode
-    // Will be processed by processPendingSave() in main loop or mode exit
-    pendingSaveFlag = true;
 }
 
 void XP::processAchievementQueue() {
@@ -1391,7 +1389,12 @@ uint8_t XP::getAchievementCount() {
 void XP::setUnlockable(uint8_t bitIndex) {
     if (bitIndex >= 32) return;  // Only 32 bits available
     data.unlockables |= (1UL << bitIndex);
-    pendingSaveFlag = true;  // Defer save to avoid bus contention
+    if (achQueueMutex != nullptr && xSemaphoreTake(achQueueMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        pendingSaveFlag = true;
+        xSemaphoreGive(achQueueMutex);
+    } else {
+        pendingSaveFlag = true;  // best-effort if mutex unavailable
+    }
 }
 
 bool XP::hasUnlockable(uint8_t bitIndex) {
