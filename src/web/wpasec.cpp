@@ -765,6 +765,7 @@ WPASecSyncResult WPASec::syncCaptures(WPASecProgressCallback cb) {
             file.close();
             file = dir.openNextFile();
         }
+        if (file) file.close();  // close leftover when loop exited on pendingCount limit
         dir.close();
     }
     

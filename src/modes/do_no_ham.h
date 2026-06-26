@@ -90,7 +90,7 @@ private:
     static uint8_t currentChannel;
     static uint8_t channelIndex;
     static uint32_t dwellStartTime;
-    static bool dwellResolved;
+    static volatile bool dwellResolved;
     
     // Data storage (uses shared networks from NetworkRecon)
     // networks vector is now in NetworkRecon

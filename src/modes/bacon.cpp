@@ -306,6 +306,7 @@ void BaconMode::updateAsyncScan() {
 
             bool alreadyAdded = false;
             uint8_t* bssid = WiFi.BSSID(j);
+            if (!bssid) continue;
             for (int k = 0; k < apCount; k++) {
                 if (memcmp(apFingerprint[k].bssid, bssid, 6) == 0) {
                     alreadyAdded = true;

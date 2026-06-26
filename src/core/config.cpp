@@ -597,7 +597,9 @@ bool Config::applyJson(const JsonDocument& doc) {
     // ML config
     if (doc["ml"].is<JsonObject>()) {
         mlConfig.enabled = doc["ml"]["enabled"] | true;
-        mlConfig.collectionMode = static_cast<MLCollectionMode>(doc["ml"]["collectionMode"] | 0);
+        { uint8_t cm = doc["ml"]["collectionMode"] | 0;
+          if (cm > static_cast<uint8_t>(MLCollectionMode::ENHANCED)) cm = 0;
+          mlConfig.collectionMode = static_cast<MLCollectionMode>(cm); }
         const char* mp = doc["ml"]["modelPath"] | "/m5porkchop/models/porkchop_model.bin";
         strncpy(mlConfig.modelPath, mp, sizeof(mlConfig.modelPath) - 1);
         mlConfig.modelPath[sizeof(mlConfig.modelPath) - 1] = '\0';
@@ -790,10 +792,14 @@ bool Config::loadPersonality() {
     personalityConfig.callsign[sizeof(personalityConfig.callsign) - 1] = '\0';
 
     personalityConfig.mood = doc["mood"] | 50;
+    if (personalityConfig.mood > 100) personalityConfig.mood = 100;
     personalityConfig.experience = doc["experience"] | 0;
     personalityConfig.curiosity = doc["curiosity"] | 0.7f;
+    if (personalityConfig.curiosity < 0.0f || personalityConfig.curiosity > 1.0f) personalityConfig.curiosity = 0.7f;
     personalityConfig.aggression = doc["aggression"] | 0.3f;
+    if (personalityConfig.aggression < 0.0f || personalityConfig.aggression > 1.0f) personalityConfig.aggression = 0.3f;
     personalityConfig.patience = doc["patience"] | 0.5f;
+    if (personalityConfig.patience < 0.0f || personalityConfig.patience > 1.0f) personalityConfig.patience = 0.5f;
     // Migration: old boolean soundEnabled → new soundLevel
     if (doc.containsKey("soundLevel")) {
         personalityConfig.soundLevel = doc["soundLevel"] | 1;
@@ -803,7 +809,9 @@ bool Config::loadPersonality() {
         personalityConfig.soundLevel = oldEnabled ? 1 : 0;
     }
     personalityConfig.brightness = doc["brightness"] | 80;
+    if (personalityConfig.brightness > 100) personalityConfig.brightness = 100;
     personalityConfig.dimLevel = doc["dimLevel"] | 20;
+    if (personalityConfig.dimLevel > 100) personalityConfig.dimLevel = 100;
     personalityConfig.dimTimeout = doc["dimTimeout"] | 30;
     personalityConfig.themeIndex = doc["themeIndex"] | 0;
     uint8_t g0Action = doc["g0Action"] | static_cast<uint8_t>(G0Action::SCREEN_TOGGLE);
