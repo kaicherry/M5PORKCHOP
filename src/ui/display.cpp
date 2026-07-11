@@ -2983,27 +2983,35 @@ void Display::onAboutEnterPressed() {
 }
 
 void Display::drawAboutScreen(M5Canvas& canvas) {
-    canvas.setTextColor(COLOR_FG);
-    canvas.setTextDatum(top_center);
+    canvas.setTextColor(0xF92A);
+    canvas.setTextDatum(top_left);
+    canvas.fillSprite(0xffff);
     
     // Title
     canvas.setTextSize(2);
-    canvas.setTextColor(COLOR_ACCENT);
-    canvas.drawString("M5PORKCHOP", DISPLAY_W / 2, 5);
+    canvas.setTextColor(0xF92A);
+    canvas.drawString("M5PORKCHOP", 10, 5);
     
     // Version
     canvas.setTextSize(1);
-    canvas.drawString("V" BUILD_VERSION, DISPLAY_W / 2, 25);
-    
+    canvas.setTextColor(0x4A4A);
+    canvas.drawString("V" BUILD_VERSION, (DISPLAY_W / 2) + 15, 10);
+    canvas.setTextDatum(top_center);
     // Author, 0ct0 stays lowercase - it's the handle
-    canvas.setTextColor(COLOR_FG);
-    canvas.drawString("BY 0ct0", DISPLAY_W / 2, 38);
-    
+    canvas.setTextColor(0);
+    canvas.setTextSize(1.5);
+    canvas.drawString("BY 0ct0", DISPLAY_W / 2, 22);
+    canvas.setTextColor(0xD81F);
+    // RnSK Lipstick/C0lR
+    canvas.setTextSize(1);
+    canvas.setTextColor(0xD81F);
+    canvas.drawString("COLOR BY: RnSKSoft", DISPLAY_W / 2, 34);
     // GitHub
+    canvas.setTextColor(0x001F);
     canvas.drawString("GITHUB.COM/0CT0SEC/M5PORKCHOP", DISPLAY_W / 2, 50);
     
     // Commit hash, uppercase the value
-    canvas.setTextColor(COLOR_ACCENT);
+    
     char commitBuf[32];
     char commitStr[16];
     strncpy(commitStr, BUILD_COMMIT, sizeof(commitStr) - 1);
@@ -3011,11 +3019,12 @@ void Display::drawAboutScreen(M5Canvas& canvas) {
     for (size_t i = 0; commitStr[i]; ++i) {
         if (commitStr[i] >= 'a' && commitStr[i] <= 'z') commitStr[i] = static_cast<char>(commitStr[i] - ('a' - 'A'));
     }
+    canvas.setTextColor(0x07E0);
     snprintf(commitBuf, sizeof(commitBuf), "COMMIT: %s", commitStr);
     canvas.drawString(commitBuf, DISPLAY_W / 2, 64);
     
     // Random quote
-    canvas.setTextColor(COLOR_FG);
+    canvas.setTextColor(0xD81F);
     char quoteBuf[48];
     snprintf(quoteBuf, sizeof(quoteBuf), "\"%s\"", ABOUT_QUOTES[aboutQuoteIndex]);
     canvas.drawString(quoteBuf, DISPLAY_W / 2, 78);
