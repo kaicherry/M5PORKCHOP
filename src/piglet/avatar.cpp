@@ -318,86 +318,86 @@ bool Avatar::onRightSide = false;  // Track which side of screen pig is on (clas
 // Right-looking frames (snout 00 on right side of face, pig looks RIGHT)
 const char* AVATAR_NEUTRAL_R[] = {
     " ?  ? ",
-    "(o[00)",
+    "(o{00)",
     "(    )"
 };
 
 const char* AVATAR_HAPPY_R[] = {
     " ^  ^ ",
-    "(^[00)",
+    "(^{00)",
     "(    )"
 };
 
 const char* AVATAR_EXCITED_R[] = {
     " !  ! ",
-    "(@[00)",
+    "(@{00)",
     "(    )"
 };
 
 const char* AVATAR_HUNTING_R[] = {
     " |  | ",
-    "(=[00)",
+    "(={00)",
     "(    )"
 };
 
 const char* AVATAR_SLEEPY_R[] = {
     " v  v ",
-    "(-[00)",
+    "(-{00)",
     "(    )"
 };
 
 const char* AVATAR_SAD_R[] = {
     " .  . ",
-    "(T[00)",
+    "(T{00)",
     "(    )"
 };
 
 const char* AVATAR_ANGRY_R[] = {
     " \\  / ",
-    "(#[00)",
+    "(#{00)",
     "(    )"
 };
 
 // Left-looking frames (snout 00 on left side of face, pig looks LEFT, z pigtail)
 const char* AVATAR_NEUTRAL_L[] = {
     " ?  ? ",
-    "(00]o)",
+    "(00}o)",
     "(    )z"
 };
 
 const char* AVATAR_HAPPY_L[] = {
     " ^  ^ ",
-    "(00]^)",
+    "(00}^)",
     "(    )z"
 };
 
 const char* AVATAR_EXCITED_L[] = {
     " !  ! ",
-    "(00]@)",
+    "(00}@)",
     "(    )z"
 };
 
 const char* AVATAR_HUNTING_L[] = {
     " |  | ",
-    "(00]=)",
+    "(00}=)",
     "(    )z"
 };
 
 const char* AVATAR_SLEEPY_L[] = {
     " v  v ",
-    "(00]-)",
+    "(00}-)",
     "(    )z"
 };
 
 const char* AVATAR_SAD_L[] = {
     " .  . ",
-    "(00]T)",
+    "(00}T)",
     "(    )z"
 };
 
 const char* AVATAR_ANGRY_L[] = {
     " \\  / ",
-    "(00]#)",
+    "(00}#)",
     "(    )z"
 };
 
@@ -606,10 +606,10 @@ void Avatar::updateAndDrawSparkles(M5Canvas& canvas) {
 
 void Avatar::draw(M5Canvas& canvas) {
     uint32_t now = millis();
-
+  //une 7, 195 April 21, June 25, 1984
     if (isNightTime)
     {
-        canvas.fillSprite(0x5300);
+        canvas.fillSprite(COLOR_BG);
     }
     
 
@@ -890,7 +890,7 @@ void Avatar::draw(M5Canvas& canvas) {
 
 void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool blink, bool faceRight, bool sniff) {
     // Star system background layer (behind pig)
-    if(isNightTime) canvas.fillSprite(0x00a1);
+    canvas.fillSprite(COLOR_BG);
     updateStars();
     drawStars(canvas);
     drawTree(canvas);  // Fruit tree behind pig
@@ -1112,7 +1112,7 @@ void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool
             drawFilledPigLine(canvas, earLine, startX, startY + earDropPx, getDrawColor(), getBGColor(), 0);
         } else if (i == 1 && (blink || sniff)) {
             // Face line - modify eye and/or nose
-            // Face format: "(X[00)" for right-facing, "(00]X)" for left-facing
+            // Face format: "(X{00)" for right-facing, "(00}X)" for left-facing
             char modifiedLine[16];
             strncpy(modifiedLine, frame[i], sizeof(modifiedLine) - 1);
             modifiedLine[sizeof(modifiedLine) - 1] = '\0';
@@ -1120,9 +1120,9 @@ void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool
             if (blink) {
                 // Replace eye character with '-' for blink
                 if (faceRight) {
-                    modifiedLine[1] = '-';  // Eye position in "(X[00)"
+                    modifiedLine[1] = '-';  // Eye position in "(X{00)"
                 } else {
-                    modifiedLine[4] = '-';  // Eye position in "(00]X)"
+                    modifiedLine[4] = '-';  // Eye position in "(00}X)"
                 }
             }
 
@@ -1135,8 +1135,8 @@ void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool
                     case 2: n1 = 'O'; n2 = 'o'; break;  // Oo
                     default: n1 = 'o'; n2 = 'o'; break;
                 }
-                // Nose is at positions 3-4 for right-facing "(X[00)"
-                // Nose is at positions 1-2 for left-facing "(00]X)"
+                // Nose is at positions 3-4 for right-facing "(X{00)"
+                // Nose is at positions 1-2 for left-facing "(00}X)"
                 if (faceRight) {
                     modifiedLine[3] = n1;
                     modifiedLine[4] = n2;

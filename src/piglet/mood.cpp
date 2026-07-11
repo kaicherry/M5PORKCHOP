@@ -2725,7 +2725,7 @@ void Mood::draw(M5Canvas& canvas) {
     // === DRAW BUBBLE ===
     // For CENTER_TOP mode with negative Y, draw to both topBar and mainCanvas
     bool drawToTopBar = (mode == BubbleMode::CENTER_TOP && bubbleY < 0);
-    
+    canvas.setTextColor(0);
     if (drawToTopBar) {
         // Get topBar canvas and draw bubble there too
         M5Canvas& topBar = Display::getTopBar();
@@ -2737,18 +2737,20 @@ void Mood::draw(M5Canvas& canvas) {
         int topBarBubbleY = TOP_BAR_H + bubbleY;
         
         // Draw bubble to topBar (portion above mainCanvas)
-        topBar.fillRoundRect(bubbleX, topBarBubbleY, bubbleW, bubbleH, 6, 0xffff);
+        topBar.fillRoundRect(bubbleX-1, topBarBubbleY, bubbleW+2, bubbleH+2, 6, 0);
+        topBar.fillRoundRect(bubbleX-1, topBarBubbleY, bubbleW, bubbleH, 6, 0xffff);
     }
     
     // Draw bubble to mainCanvas (negative Y portion will be clipped)
-    canvas.fillRoundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6, 0xffff);
-    
+    canvas.fillRoundRect(bubbleX -1, bubbleY -1, bubbleW+2, bubbleH, 6, 0);
+    canvas.fillRoundRect(bubbleX, bubbleY, bubbleW, bubbleH-2, 6, 0xffff);
     // === DRAW ARROW ===
     if (mode == BubbleMode::LEFT_EDGE) {
         // Pig on left, bubble on right → horizontal arrow pointing LEFT toward pig
         int arrowY = bubbleY + (bubbleH / 2);  // Middle of bubble vertically
         int arrowTipX = bubbleX - ARROW_LENGTH;
         int arrowBaseX = bubbleX;
+        canvas.fillTriangle(arrowTipX+4, arrowY-1, arrowBaseX, arrowY - 6, arrowBaseX, arrowY , 0);
         canvas.fillTriangle(arrowTipX, arrowY, arrowBaseX, arrowY - 6, arrowBaseX, arrowY + 6, 0xffff);
     } else if (mode == BubbleMode::RIGHT_EDGE) {
         // Pig on right, bubble on left → horizontal arrow pointing RIGHT toward pig
@@ -2786,7 +2788,7 @@ void Mood::draw(M5Canvas& canvas) {
             M5Canvas& topBar = Display::getTopBar();
             topBar.setTextSize(1);
             topBar.setTextDatum(top_left);
-            topBar.setTextColor(COLOR_BG);
+            topBar.setTextColor(0);
             int topBarLineY = TOP_BAR_H + lineY;
             if (topBarLineY >= 0 && topBarLineY < TOP_BAR_H) {
                 topBar.drawString(line, textX, topBarLineY);
@@ -2796,7 +2798,7 @@ void Mood::draw(M5Canvas& canvas) {
         // Draw text to mainCanvas (negative Y will be clipped)
         canvas.setTextSize(1);
         canvas.setTextDatum(top_left);
-        canvas.setTextColor(COLOR_BG);
+        canvas.setTextColor(0);
         canvas.drawString(line, textX, lineY);
         
         lineNum++;

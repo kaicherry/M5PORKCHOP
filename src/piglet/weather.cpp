@@ -8,6 +8,7 @@
 #include "../core/xp.h"
 #include "../audio/sfx.h"
 #include <esp_random.h>
+#include <M5Unified.h>
 
 namespace Weather {
 
@@ -120,6 +121,8 @@ static ImpactSplash impactSplashes[6];  // shared splash pool
 static int8_t whistlingBird = -1;       // index of bird currently whistling (-1 = none)
 static uint32_t lastBirdUpdate = 0;
 static uint32_t nextBirdSpawn = 0;
+
+auto dt = M5.Rtc.getDateTime();
 
 static void spawnBird() {
     // Find inactive slot
@@ -779,27 +782,27 @@ bool isRaining() {
 // Pixel-art circle: 3-band stepped rectangle (blocky puff)
 static void drawPixelPuff(M5Canvas& canvas, int cx, int cy, int r, uint16_t color) {
     if (r <= 1) {
-        canvas.fillRect(cx - 1, cy - 1, 3, 3, color);
+        canvas.fillRect(cx - 1, cy - 1, 3, 3, 0x001F);
         return;
     }
     int inset = (r + 1) / 2;
     // Wide center band
-    canvas.fillRect(cx - r, cy - r + inset, r * 2, r * 2 - inset * 2, color);
+    canvas.fillRect(cx - r, cy - r + inset, r * 2, r * 2 - inset * 2, 0xffff);
     // Narrower top row
-    canvas.fillRect(cx - r + inset, cy - r, (r - inset) * 2, inset, color);
+    canvas.fillRect(cx - r + inset, cy - r, (r - inset) * 2, inset, 0xffff);
     // Narrower bottom row
-    canvas.fillRect(cx - r + inset, cy + r - inset, (r - inset) * 2, inset, color);
+    canvas.fillRect(cx - r + inset, cy + r - inset, (r - inset) * 2, inset, 0xffff);
 }
 
 void drawClouds(M5Canvas& canvas, uint16_t colorFG) {
     // During thunder flash, use inverted color (matches sirloin's getDrawColor)
-    uint16_t drawColor = isThunderFlashing() ? getColorBG() : colorFG;
+    uint16_t drawColor = isThunderFlashing() ? getColorBG() : 0xFFFF;
 
     float rainBoost = rainActive ? 1.8f : 1.0f;
     for (int i = 0; i < MAX_CLOUDS; i++) {
         if (!clouds[i].active || clouds[i].scale == 0) continue;
         float scaleFactor = (float)clouds[i].scale / 255.0f;
-
+        drawColor = rainActive ? 0xD69A : 0xFFFF;
         for (int p = 0; p < clouds[i].puffCount; p++) {
             int r = (int)((float)clouds[i].puffs[p].radius * scaleFactor * rainBoost + 0.5f);
             if (r < 1) continue;
@@ -826,8 +829,16 @@ static inline int16_t birdSnap(int16_t v) {
 
 void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
     // During thunder flash, invert color like clouds do
-    uint16_t drawColor = isThunderFlashing() ? getColorBG() : colorFG;
+    uint16_t drawColor = isThunderFlashing() ? getColorBG() : getColorFG();
+    uint16_t brdClr = getColorFG();
+    uint16_t boomClr = brdClr;
 
+    if (Display::useFullColor()) 
+    {
+        drawColor = 0x4A4A;
+        brdClr = 0x4A4A;
+        boomClr = 0xff00;
+    }
     for (int i = 0; i < 2; i++) {
         if (!birds[i].active) continue;
         const SkyBird& b = birds[i];
@@ -835,7 +846,7 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
         if (!b.falling) {
             // Flying bird: body (center) + 2 wing pixels that flap up/down
             int16_t bx = birdSnap((int16_t)b.x);
-            int16_t bodyY = birdSnap(b.y + ((b.sinePhase & 0x08) ? BIRD_PX : 0));
+            int16_t bodyY = birdSnap(b.y + ((b.sinePhase & brdClr) ? BIRD_PX : 0));
             bool wingsUp = (b.sinePhase & 0x04) != 0;  // flap faster than bob
             int16_t wingY = wingsUp ? (bodyY - BIRD_PX) : (bodyY + BIRD_PX);
             canvas.fillRect(bx, wingY, BIRD_PX, BIRD_PX, drawColor);                       // left wing
@@ -884,7 +895,7 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
             int16_t px = birdSnap(cx + pts[p][0]);
             int16_t py = birdSnap(cy + pts[p][1]);
             if (px >= 0 && px < 240 && py >= 0 && py < 107) {
-                canvas.fillRect(px, py, BIRD_PX, BIRD_PX, drawColor);
+                canvas.fillRect(px, py, BIRD_PX, BIRD_PX, boomClr);
             }
         }
     }
@@ -897,16 +908,26 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
         int16_t sx = birdSnap((int16_t)impactSplashes[s].x);
         int16_t sy = birdSnap((int16_t)impactSplashes[s].y);
         if (sx >= 0 && sx < 240 && sy >= 0 && sy < 107) {
-            canvas.fillRect(sx, sy, BIRD_PX, BIRD_PX, drawColor);
+            canvas.fillRect(sx, sy, BIRD_PX, BIRD_PX, Display::useFullColor? 0xFDA0: COLOR_FG);
         }
     }
 }
 
 void draw(M5Canvas& canvas, uint16_t colorFG, uint16_t colorBG) {
     // During thunder flash, invert colors for rain/wind (matches sirloin)
-    uint16_t drawColor = isThunderFlashing() ? colorBG : colorFG;
-
+    uint16_t drawColor = isThunderFlashing() ? 0x95AA : colorFG;
+    //canvas.fillSprite(COLOR_BG);
     // Draw rain as fat pixel columns (2 blocks tall, grid-snapped)
+     //Draw a sun or moon
+       int8_t hour = dt.time.hours;
+       hour = hour *2;
+        if(Avatar::isNightTime()){
+        canvas.fillCircle(15+ (hour) ,15,10,0xE71C);
+        canvas.fillCircle(10+ (hour) ,10,10,0);
+        }else{
+            canvas.fillCircle(20+(hour),20,15,0xFFE0);
+        }
+        
     if (rainActive) {
         for (int i = 0; i < RAIN_DROP_COUNT; i++) {
             int16_t rx = birdSnap((int16_t)rainDrops[i].x);
@@ -916,16 +937,17 @@ void draw(M5Canvas& canvas, uint16_t colorFG, uint16_t colorBG) {
 
             // 2-block vertical streak
             if (ry < 103) {
-                canvas.fillRect(rx, ry, BIRD_PX, BIRD_PX, drawColor);
+                canvas.fillRect(rx, ry, BIRD_PX, BIRD_PX, 0x05FF);
             }
             if (ry + BIRD_PX < 103) {
-                canvas.fillRect(rx, ry + BIRD_PX, BIRD_PX, BIRD_PX, drawColor);
+                canvas.fillRect(rx, ry + BIRD_PX, BIRD_PX, BIRD_PX, 0x05FF);
             }
         }
-    }
+    } 
 
     // Draw wind particles as grid-snapped fat pixels (shrink from multi-block to single)
     if (windActive) {
+        uint16_t wClr = Display::useFullColor ? 0x4A4A : COLOR_FG;
         for (int i = 0; i < 6; i++) {
             if (!windParticles[i].active) continue;
             int16_t wx = birdSnap((int16_t)windParticles[i].x);
@@ -944,7 +966,7 @@ void draw(M5Canvas& canvas, uint16_t colorFG, uint16_t colorBG) {
             for (int b = 0; b < blocks; b++) {
                 int16_t bx = windParticles[i].dirRight ? (wx + b * BIRD_PX) : (wx - b * BIRD_PX);
                 if (bx >= 0 && bx < DISPLAY_W && wy >= 0 && wy < 107) {
-                    canvas.fillRect(bx, wy, BIRD_PX, BIRD_PX, drawColor);
+                    canvas.fillRect(bx, wy, BIRD_PX, BIRD_PX, wClr);
                 }
             }
         }
