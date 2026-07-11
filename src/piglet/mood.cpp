@@ -2737,11 +2737,11 @@ void Mood::draw(M5Canvas& canvas) {
         int topBarBubbleY = TOP_BAR_H + bubbleY;
         
         // Draw bubble to topBar (portion above mainCanvas)
-        topBar.fillRoundRect(bubbleX, topBarBubbleY, bubbleW, bubbleH, 6, COLOR_FG);
+        topBar.fillRoundRect(bubbleX, topBarBubbleY, bubbleW, bubbleH, 6, 0xffff);
     }
     
     // Draw bubble to mainCanvas (negative Y portion will be clipped)
-    canvas.fillRoundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6, COLOR_FG);
+    canvas.fillRoundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6, 0xffff);
     
     // === DRAW ARROW ===
     if (mode == BubbleMode::LEFT_EDGE) {
@@ -2749,13 +2749,13 @@ void Mood::draw(M5Canvas& canvas) {
         int arrowY = bubbleY + (bubbleH / 2);  // Middle of bubble vertically
         int arrowTipX = bubbleX - ARROW_LENGTH;
         int arrowBaseX = bubbleX;
-        canvas.fillTriangle(arrowTipX, arrowY, arrowBaseX, arrowY - 6, arrowBaseX, arrowY + 6, COLOR_FG);
+        canvas.fillTriangle(arrowTipX, arrowY, arrowBaseX, arrowY - 6, arrowBaseX, arrowY + 6, 0xffff);
     } else if (mode == BubbleMode::RIGHT_EDGE) {
         // Pig on right, bubble on left → horizontal arrow pointing RIGHT toward pig
         int arrowY = bubbleY + (bubbleH / 2);
         int arrowTipX = bubbleX + bubbleW + ARROW_LENGTH;
         int arrowBaseX = bubbleX + bubbleW;
-        canvas.fillTriangle(arrowTipX, arrowY, arrowBaseX, arrowY - 6, arrowBaseX, arrowY + 6, COLOR_FG);
+        canvas.fillTriangle(arrowTipX, arrowY, arrowBaseX, arrowY - 6, arrowBaseX, arrowY + 6, 0xffff);
     } else {
         // Center mode → vertical arrow pointing DOWN toward pig's head
         int arrowTipY = 35;  // Point at pig's ear area (updated for new head Y)
@@ -2767,7 +2767,7 @@ void Mood::draw(M5Canvas& canvas) {
         if (arrowLeftX < bubbleX + 2) arrowLeftX = bubbleX + 2;
         if (arrowRightX > bubbleX + bubbleW - 2) arrowRightX = bubbleX + bubbleW - 2;
         
-        canvas.fillTriangle(pigHeadCenterX, arrowTipY, arrowLeftX, arrowBaseY, arrowRightX, arrowBaseY, COLOR_FG);
+        canvas.fillTriangle(pigHeadCenterX, arrowTipY, arrowLeftX, arrowBaseY, arrowRightX, arrowBaseY, 0xffff);
     }
     
     // === DRAW TEXT ===
