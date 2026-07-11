@@ -1459,7 +1459,7 @@ void SpectrumMode::draw(M5Canvas& canvas) {
     } else {
         // Draw spectrum visualization
         drawAxis(canvas, fg);
-        drawNoiseFloor(canvas, fg);
+        drawNoiseFloor(canvas, 0xffff);
         drawSpectrum(canvas, fg, bg);
         drawWaterfall(canvas, fg);
         drawChannelMarkers(canvas, fg, bg);
@@ -1480,12 +1480,15 @@ void SpectrumMode::draw(M5Canvas& canvas) {
             status[0] = '\0';
             if (isVulnerable(renderSelected.authmode)) {
                 pos += snprintf(status + pos, sizeof(status) - pos, "[VULN!]");
+                canvas.setTextColor(0x27E0);
             }
             if (!renderSelected.hasPMF) {
                 pos += snprintf(status + pos, sizeof(status) - pos, "[DEAUTH]");
+                canvas.setTextColor(0xF800);
             }
             if (OinkMode::isExcluded(renderSelected.bssid)) {
                 pos += snprintf(status + pos, sizeof(status) - pos, "[BRO]");
+                canvas.setTextColor(0x001F);
             }
             if (pos > 0) {
                 canvas.drawString(status, SPECTRUM_LEFT + 2, SPECTRUM_TOP);
@@ -1493,7 +1496,7 @@ void SpectrumMode::draw(M5Canvas& canvas) {
         }
 
         if (actionPromptActive) {
-            drawActionPrompt(canvas, fg, bg);
+            drawActionPrompt(canvas, fg,0xffff);
         }
     }
 
@@ -1502,18 +1505,30 @@ void SpectrumMode::draw(M5Canvas& canvas) {
 
 void SpectrumMode::drawAxis(M5Canvas& canvas, uint16_t fg) {
     // Y-axis line
+    if (Display::useFullColor) fg = 0x0000;
     canvas.drawFastVLine(SPECTRUM_LEFT - 2, SPECTRUM_TOP, SPECTRUM_BOTTOM - SPECTRUM_TOP, fg);
 
     // dB labels on left
     canvas.setTextSize(1);
+     if (Display::useFullColor) fg = 0x27E0;
     canvas.setTextColor(fg);
     canvas.setTextDatum(middle_right);
 
     for (int8_t rssi = -30; rssi >= -90; rssi -= 20) {
         int y = rssiToY(rssi);
         int labelY = (y < 6) ? 6 : y;
+        if(rssi == -30) {
+            fg = 0x27E0;
+        }else if(rssi == -50){
+            fg = 0xF92A;
+        }else if(rssi == -70){
+             fg = 0xF800;
+        } else {
+            fg = 0x0360;
+        }
         canvas.drawFastHLine(SPECTRUM_LEFT - 4, y, 3, fg);
         char rssiLabel[6];
+        canvas.setTextColor(fg);
         snprintf(rssiLabel, sizeof(rssiLabel), "%d", rssi);
         canvas.drawString(rssiLabel, SPECTRUM_LEFT - 5, labelY);
     }
@@ -1524,8 +1539,9 @@ void SpectrumMode::drawAxis(M5Canvas& canvas, uint16_t fg) {
 
 void SpectrumMode::drawChannelMarkers(M5Canvas& canvas, uint16_t fg, uint16_t bg) {
     canvas.setTextSize(1);
-    canvas.setTextColor(fg);
+    canvas.setTextColor(0x4A4A);
     canvas.setTextDatum(top_center);
+    if (Display::useFullColor) fg = 0x0000;
 
     if (viewBand == SpectrumBand::BAND_24) {
         // ==[ DIAL MODE: SLIDING HIGHLIGHT BOX ]==
@@ -1553,7 +1569,7 @@ void SpectrumMode::drawChannelMarkers(M5Canvas& canvas, uint16_t fg, uint16_t bg
             int x = freqToX(freq);
             if (x < SPECTRUM_LEFT || x > SPECTRUM_RIGHT) continue;
 
-            canvas.drawFastVLine(x, SPECTRUM_BOTTOM, 3, fg);
+            canvas.drawFastVLine(x, SPECTRUM_BOTTOM, 3, 0xffff);
 
             bool isDialSelected = dialMode && (fabsf(dialPositionSmooth - (float)ch) < 0.6f);
             canvas.setTextColor(isDialSelected ? bg : fg);
@@ -1666,7 +1682,7 @@ void SpectrumMode::drawFilterBar(M5Canvas& canvas, uint16_t fg) {
     }
     
     canvas.setTextSize(1);
-    canvas.setTextColor(fg);
+    canvas.setTextColor(0xffff);
     canvas.setTextDatum(top_left);
 
     // Build filter status string
@@ -1757,7 +1773,7 @@ void SpectrumMode::drawDialInfo(M5Canvas& canvas, uint16_t fg) {
     snprintf(info, sizeof(info), "%s%d %dMHz %spps", prefix, channel, freq, ppsStr);
     
     canvas.setTextSize(1);
-    canvas.setTextColor(fg);
+    canvas.setTextColor(0xFFE0);
     canvas.setTextDatum(top_right);  // top-right align
     canvas.drawString(info, 236, infoY);
     canvas.setTextDatum(top_left);  // reset
@@ -1863,7 +1879,7 @@ void SpectrumMode::updateWaterfall() {
 // Draw waterfall display - historical spectrum scrolling down
 void SpectrumMode::drawWaterfall(M5Canvas& canvas, uint16_t fg) {
     // Draw horizontal separator line above waterfall
-    canvas.drawFastHLine(SPECTRUM_LEFT, WATERFALL_TOP - 1, SPECTRUM_WIDTH, fg);
+    canvas.drawFastHLine(SPECTRUM_LEFT, WATERFALL_TOP - 1, SPECTRUM_WIDTH, 0xffff);
     
     // Draw waterfall rows (oldest at top, newest at bottom)
     for (int row = 0; row < WATERFALL_ROWS; row++) {
@@ -1885,14 +1901,19 @@ void SpectrumMode::drawWaterfall(M5Canvas& canvas, uint16_t fg) {
                 
                 if (intensity > 200) {
                     drawPixel = true;  // Full brightness - always draw
+                    fg = 0x27E0;
                 } else if (intensity > 150) {
                     drawPixel = ((x + row) % 2) == 0;  // 50% checkerboard
+                    fg = 0xD81F;
                 } else if (intensity > 100) {
                     drawPixel = ((x % 2) == 0) && ((row % 2) == 0);  // 25% grid
+                    fg = 0x001f;
                 } else if (intensity > 50) {
                     drawPixel = ((x % 3) == 0) && ((row % 2) == 0);  // ~16% sparse
+                    fg = 0xffff;
                 } else {
                     drawPixel = ((x % 4) == 0) && ((row % 3) == 0);  // ~8% very sparse
+                    fg = 0x4A4A;
                 }
                 
                 if (drawPixel) {
@@ -1909,7 +1930,7 @@ void SpectrumMode::drawClientOverlay(M5Canvas& canvas, uint16_t fg, uint16_t bg)
     // XP bar is at y=91, drawn separately in draw()
 
     canvas.setTextSize(1);
-    canvas.setTextColor(fg, bg);
+    canvas.setTextColor(0xffff, bg);
     
     // Bounds check [P3]
     if (!renderMonitor.valid) {
@@ -2284,6 +2305,17 @@ void SpectrumMode::drawGaussianLobe(M5Canvas& canvas, float centerFreqMHz,
         // Calculate Y with activity jitter
         int y = baseY - (int)(lobeHeightMod * amp) + jitterOffset;
         y = constrain(y, SPECTRUM_TOP, baseY);
+        
+        if(y <= 14) {
+            fg = 0x27E0;
+        }else if(y <= 28){
+            fg = 0xF92A;
+        }else if(y <= 42){
+             fg = 0xF800;
+        } else {
+            fg = 0x0360;
+        }
+       
         
         if (filled) {
             // Filled: draw vertical line from baseline to curve
