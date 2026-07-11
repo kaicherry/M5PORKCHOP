@@ -74,8 +74,8 @@ public:
     // Burst-based: each call extends a 2700ms burst without resetting phase.
     // OUTGOING priority: active OUTGOING burst can't be overridden by INCOMING
     static void waveRipple(WaveMode mode, uint8_t intensity = 3);  // intensity: 1-5 rings
-    static WaveMode getWaveMode() { return waveMode; }
-
+    static WaveMode getWaveMode() { return waveMode; };
+    //PorkchopMode getMode();
     // Bird-wave collision check (called by Weather bird system)
     static bool checkBirdWaveCollision(int16_t bx, int16_t by);
 

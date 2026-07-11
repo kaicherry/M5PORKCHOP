@@ -4,6 +4,7 @@
 #include "weather.h"
 #include "../ui/display.h"
 #include "../audio/sfx.h"
+#include "../core/porkchop.h"
 #include <time.h>
 
 // Static members
@@ -117,6 +118,7 @@ uint8_t Avatar::treePendingFruits = 0;
 uint32_t Avatar::treeAliveStart = 0;
 int16_t Avatar::treeScrollOffset = 0;
 
+bool inC0LR =  Display::useFullColor;
 // Tree-pig collision state (pig bumps into tree → both shake)
 static bool treeColliding = false;
 static bool wasTreeColliding = false;  // edge detection for grunt sound
@@ -140,6 +142,8 @@ struct FruitSplash {
     uint32_t spawnTime;
     bool active;
 };
+
+uint16_t fruitClr = Display::useFullColor ? 0xF800 : COLOR_FG;
 static constexpr uint8_t FRUIT_SPLASH_COUNT = 8;
 static FruitSplash fruitSplashes[FRUIT_SPLASH_COUNT] = {{0}};
 static uint8_t fruitSplashIdx = 0;
@@ -202,7 +206,7 @@ static void drawFilledPigLine(M5Canvas& canvas, const char* line, int x, int y,
     const int charW = 18;  // char width at text size 3
     const int charH = 22;  // line height
     int len = strlen(line);
-
+    fgColor = 0xFA97;
     // Find paren positions
     int openIdx = -1, closeIdx = -1;
     for (int i = 0; i < len; i++) {
@@ -260,7 +264,7 @@ static void drawFilledPigLine(M5Canvas& canvas, const char* line, int x, int y,
     }
 
     // Draw non-space interior chars in BG (holes/details)
-    canvas.setTextColor(bgColor);
+    canvas.setTextColor(0xFDB8);
     for (int i = openIdx + 1; i < closeIdx; i++) {
         if (line[i] != ' ') {
             canvas.drawChar(line[i], x + i * charW, y);
@@ -314,86 +318,86 @@ bool Avatar::onRightSide = false;  // Track which side of screen pig is on (clas
 // Right-looking frames (snout 00 on right side of face, pig looks RIGHT)
 const char* AVATAR_NEUTRAL_R[] = {
     " ?  ? ",
-    "(o 00)",
+    "(o[00)",
     "(    )"
 };
 
 const char* AVATAR_HAPPY_R[] = {
     " ^  ^ ",
-    "(^ 00)",
+    "(^[00)",
     "(    )"
 };
 
 const char* AVATAR_EXCITED_R[] = {
     " !  ! ",
-    "(@ 00)",
+    "(@[00)",
     "(    )"
 };
 
 const char* AVATAR_HUNTING_R[] = {
     " |  | ",
-    "(= 00)",
+    "(=[00)",
     "(    )"
 };
 
 const char* AVATAR_SLEEPY_R[] = {
     " v  v ",
-    "(- 00)",
+    "(-[00)",
     "(    )"
 };
 
 const char* AVATAR_SAD_R[] = {
     " .  . ",
-    "(T 00)",
+    "(T[00)",
     "(    )"
 };
 
 const char* AVATAR_ANGRY_R[] = {
     " \\  / ",
-    "(# 00)",
+    "(#[00)",
     "(    )"
 };
 
 // Left-looking frames (snout 00 on left side of face, pig looks LEFT, z pigtail)
 const char* AVATAR_NEUTRAL_L[] = {
     " ?  ? ",
-    "(00 o)",
+    "(00]o)",
     "(    )z"
 };
 
 const char* AVATAR_HAPPY_L[] = {
     " ^  ^ ",
-    "(00 ^)",
+    "(00]^)",
     "(    )z"
 };
 
 const char* AVATAR_EXCITED_L[] = {
     " !  ! ",
-    "(00 @)",
+    "(00]@)",
     "(    )z"
 };
 
 const char* AVATAR_HUNTING_L[] = {
     " |  | ",
-    "(00 =)",
+    "(00]=)",
     "(    )z"
 };
 
 const char* AVATAR_SLEEPY_L[] = {
     " v  v ",
-    "(00 -)",
+    "(00]-)",
     "(    )z"
 };
 
 const char* AVATAR_SAD_L[] = {
     " .  . ",
-    "(00 T)",
+    "(00]T)",
     "(    )z"
 };
 
 const char* AVATAR_ANGRY_L[] = {
     " \\  / ",
-    "(00 #)",
+    "(00]#)",
     "(    )z"
 };
 
@@ -583,7 +587,8 @@ void Avatar::triggerSparkles(uint8_t count) {
 }
 
 void Avatar::updateAndDrawSparkles(M5Canvas& canvas) {
-    uint16_t fg = getColorFG();
+    uint16_t fg = Display::useFullColor ? 0xff: getColorFG();
+    
     for (uint8_t i = 0; i < MAX_SPARKLES; i++) {
         if (sparkles[i].life == 0) continue;
         // Update position
@@ -601,6 +606,12 @@ void Avatar::updateAndDrawSparkles(M5Canvas& canvas) {
 
 void Avatar::draw(M5Canvas& canvas) {
     uint32_t now = millis();
+
+    if (isNightTime)
+    {
+        canvas.fillSprite(0x5300);
+    }
+    
 
     // Sniff animation times out after SNIFF_DURATION_MS
     // Update sniff frame for animation (cycle every 100ms)
@@ -879,6 +890,7 @@ void Avatar::draw(M5Canvas& canvas) {
 
 void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool blink, bool faceRight, bool sniff) {
     // Star system background layer (behind pig)
+    if(isNightTime) canvas.fillSprite(0x00a1);
     updateStars();
     drawStars(canvas);
     drawTree(canvas);  // Fruit tree behind pig
@@ -1100,7 +1112,7 @@ void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool
             drawFilledPigLine(canvas, earLine, startX, startY + earDropPx, getDrawColor(), getBGColor(), 0);
         } else if (i == 1 && (blink || sniff)) {
             // Face line - modify eye and/or nose
-            // Face format: "(X 00)" for right-facing, "(00 X)" for left-facing
+            // Face format: "(X[00)" for right-facing, "(00]X)" for left-facing
             char modifiedLine[16];
             strncpy(modifiedLine, frame[i], sizeof(modifiedLine) - 1);
             modifiedLine[sizeof(modifiedLine) - 1] = '\0';
@@ -1108,9 +1120,9 @@ void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool
             if (blink) {
                 // Replace eye character with '-' for blink
                 if (faceRight) {
-                    modifiedLine[1] = '-';  // Eye position in "(X 00)"
+                    modifiedLine[1] = '-';  // Eye position in "(X[00)"
                 } else {
-                    modifiedLine[4] = '-';  // Eye position in "(00 X)"
+                    modifiedLine[4] = '-';  // Eye position in "(00]X)"
                 }
             }
 
@@ -1123,8 +1135,8 @@ void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool
                     case 2: n1 = 'O'; n2 = 'o'; break;  // Oo
                     default: n1 = 'o'; n2 = 'o'; break;
                 }
-                // Nose is at positions 3-4 for right-facing "(X 00)"
-                // Nose is at positions 1-2 for left-facing "(00 X)"
+                // Nose is at positions 3-4 for right-facing "(X[00)"
+                // Nose is at positions 1-2 for left-facing "(00]X)"
                 if (faceRight) {
                     modifiedLine[3] = n1;
                     modifiedLine[4] = n2;
@@ -1279,7 +1291,7 @@ void Avatar::drawGrass(M5Canvas& canvas) {
     updateGrass();
 
     uint32_t now = millis();
-    uint16_t color = getDrawColor();  // Thunder-aware color
+    uint16_t color = Display::useFullColor ? 0x07E0 : COLOR_BG;  // Thunder-aware color
     const int16_t baseY = 106;  // Ground line (pixel-adjacent with bottom bar)
 
     // Query shake state once per frame
@@ -1368,7 +1380,7 @@ void Avatar::drawGrass(M5Canvas& canvas) {
         if (bladeInverted) {
             bladeColor = getBGColor();
         } else if (pigOnGround && cx >= pigLeft && cx <= pigRight) {
-            bladeColor = getBGColor();
+            bladeColor = color;
         } else {
             bladeColor = color;
         }
@@ -1634,7 +1646,7 @@ void Avatar::generateTree(uint8_t fruitCount) {
     treeFruitCount = fruitCount > MAX_TREE_FRUITS ? MAX_TREE_FRUITS : fruitCount;
     uint8_t fruitRadius = (treeFruitCount <= 4) ? 6 : 4;
     uint8_t endpointCount = treeBranchCount > 0 ? treeBranchCount : 1;
-
+    
     for (uint8_t i = 0; i < treeFruitCount; i++) {
         uint8_t bi = (uint8_t)(treeLCG(s) % endpointCount);
         const TreeBranch& br = treeBranches[bi];
@@ -1642,7 +1654,7 @@ void Avatar::generateTree(uint8_t fruitCount) {
         treeFruits[i].offsetX = br.x2 + (int8_t)((treeLCG(s) % (scatter * 2 + 1)) - scatter);
         treeFruits[i].offsetY = br.y2 + (int8_t)((treeLCG(s) % (scatter * 2 + 1)) - scatter);
         treeFruits[i].radius = fruitRadius;
-        treeFruits[i].bobPhase = (uint8_t)(treeLCG(s) & 0xFF);
+        treeFruits[i].bobPhase = (uint8_t)(treeLCG(s) & fruitClr);
     }
 }
 
@@ -1678,7 +1690,7 @@ void Avatar::showTree(uint8_t fruitCount) {
             treeFruits[i].offsetX = br.x2 + (int8_t)((treeLCG(s) % (scatter * 2 + 1)) - scatter);
             treeFruits[i].offsetY = br.y2 + (int8_t)((treeLCG(s) % (scatter * 2 + 1)) - scatter);
             treeFruits[i].radius = fruitRadius;
-            treeFruits[i].bobPhase = (uint8_t)(treeLCG(s) & 0xFF);
+            treeFruits[i].bobPhase = (uint8_t)(treeLCG(s) & fruitClr);
         }
         return;
     }
@@ -1890,6 +1902,7 @@ void Avatar::drawTree(M5Canvas& canvas) {
 
     // --- Phase 1: Trunk (growth 0.0 - 0.25) ---
     float trunkProgress = 1.0f;
+    u16_t trClr = inC0LR ? 0xFDA0 : getColorFG();
     if (!collapsing && treeGrowth < 0.25f) {
         trunkProgress = treeGrowth / 0.25f;
     }
@@ -1916,7 +1929,7 @@ void Avatar::drawTree(M5Canvas& canvas) {
                 int hwFat = 1 + (int)(t * 1.0f + 0.5f);  // 1 at top, 2 at bottom
                 int16_t h = (row + PX > trunkH) ? (trunkH - row) : PX;
                 for (int dx = -hwFat; dx <= hwFat; dx++) {
-                    canvas.fillRect(snapPx(bx + rowLean) + dx * PX, trunkTop + row, PX, h, fg);
+                    canvas.fillRect(snapPx(bx + rowLean) + dx * PX, trunkTop + row, PX, h,  trClr);
                 }
             }
         }
@@ -1951,7 +1964,7 @@ void Avatar::drawTree(M5Canvas& canvas) {
         int16_t ex = sx + (int16_t)((float)(fullEx - sx) * branchProgress);
         int16_t ey = sy + (int16_t)((float)(fullEy - sy) * branchProgress);
 
-        fatLine(canvas, sx, sy, ex, ey, fg);
+        fatLine(canvas, sx, sy, ex, ey,  trClr);
     }
 
     // --- Phase 3: Fruits (growth 0.75 - 1.0) ---
@@ -1989,7 +2002,7 @@ void Avatar::drawTree(M5Canvas& canvas) {
             }
 
             // Fat-pixel fruit
-            fatFruit(canvas, fx, fy, f.radius, bg, fg);
+            fatFruit(canvas, fx, fy, f.radius, bg, fruitClr); //0x07E0
 
         }
     }
@@ -2025,7 +2038,7 @@ void Avatar::drawTree(M5Canvas& canvas) {
         }
 
         // Draw falling fruit (fat-pixel, same style as tree fruits)
-        fatFruit(canvas, droppingFruits[i].x, currentY, droppingFruits[i].radius, bg, fg);
+        fatFruit(canvas, droppingFruits[i].x, currentY, droppingFruits[i].radius, bg, fruitClr);
     }
 }
 
@@ -2134,7 +2147,7 @@ void Avatar::drawStars(M5Canvas& canvas) {
     if (!starsActive || starCount == 0) return;
 
     uint32_t now = millis();
-    uint16_t fg = getDrawColor();
+    uint16_t fg = 0xffff;
     canvas.setTextSize(1);
     canvas.setTextColor(fg);
     canvas.setTextDatum(top_left);
@@ -2258,7 +2271,10 @@ void Avatar::drawWaveRipples(M5Canvas& canvas, bool faceRight, int startX, int s
         if (fadeElapsed >= FADE_MS) { waveMode = WaveMode::NONE; return; }
         minProgress = (float)fadeElapsed / (float)FADE_MS * 0.80f;
     }
-    uint16_t color = getDrawColor();
+    uint16_t color = COLOR_FG;
+    if(inC0LR){
+        color = 0xFFE0;
+    }
 
     const bool outgoing = (waveMode == WaveMode::OUTGOING);
 
@@ -2297,12 +2313,21 @@ void Avatar::drawWaveRipples(M5Canvas& canvas, bool faceRight, int startX, int s
             : snapPx(R_MIN + R_MAX - rRaw);
 
         bool earlyLife = (t < 0.5f);
-
+        PorkchopMode pp = Display::currentMode();
         if (outgoing) {
+            
+            if(pp == PorkchopMode::PIGGYBLUES_MODE ) {
+            drawCircleRing(canvas, waveCX, waveCY, r,0x001F, false, MAX_PX_X, MAX_PX_Y);
+            }else{
             // --- OUTGOING: expanding circles, clip at edges ---
-            drawCircleRing(canvas, waveCX, waveCY, r, color, false, MAX_PX_X, MAX_PX_Y);
+            drawCircleRing(canvas, waveCX, waveCY, r,0xF800, false, MAX_PX_X, MAX_PX_Y);
+            }
             if (earlyLife)
-                drawCircleRing(canvas, waveCX, waveCY, r + PX, color, false, MAX_PX_X, MAX_PX_Y);
+            if(pp == PorkchopMode::PIGGYBLUES_MODE ){
+                drawCircleRing(canvas, waveCX, waveCY, + PX,0x001F, false, MAX_PX_X, MAX_PX_Y);
+            }else{        
+                drawCircleRing(canvas, waveCX, waveCY, r + PX, 0xF800, false, MAX_PX_X, MAX_PX_Y);
+            }
 
             // Tree shake detection: check if ring intersects tree
             if (!waveTreeShaking && (treePhase == TreePhase::ALIVE || treePhase == TreePhase::GROWING)) {
@@ -2322,9 +2347,9 @@ void Avatar::drawWaveRipples(M5Canvas& canvas, bool faceRight, int startX, int s
             }
         } else {
             // --- INCOMING: full radial circle, clipped at edges (no reflection) ---
-            drawCircleRing(canvas, waveCX, waveCY, r, color, false, MAX_PX_X, MAX_PX_Y);
+            drawCircleRing(canvas, waveCX, waveCY, r, 0x07E0, false, MAX_PX_X, MAX_PX_Y);
             if (earlyLife)
-                drawCircleRing(canvas, waveCX, waveCY, r + PX, color, false, MAX_PX_X, MAX_PX_Y);
+                drawCircleRing(canvas, waveCX, waveCY, r + PX, 0x07E0, false, MAX_PX_X, MAX_PX_Y);
         }
     }
 }
