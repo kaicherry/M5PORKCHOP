@@ -2,7 +2,7 @@
                     Volume Zero, Issue 3, Phile 1 of 1
 
                           M5PORKCHOP README
-                          v0.1.8b-PSTH
+                          v0.1.8b-PSTH/JANOS Hog in Techno-colors
 
                             ^__^
                             (oo)\_______
@@ -12,6 +12,11 @@
                 (yes that's a cow. the pig ate the pig art budget.)
                 (the horse was unavailable for comment.)
 
+                              ^  ^ 
+                             (^{00)
+                             (    ) THIS is the pig. What RnSK did...
+                                    ...was put some C0LR Lipstick on it. Enjoy.
+                             The *Rest* of all this gudness is 0ct0. Respect.
 
                 67% of skids skip READMEs.
                 100% of those skids report bugs we documented.
