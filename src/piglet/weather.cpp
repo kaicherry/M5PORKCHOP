@@ -122,7 +122,33 @@ static int8_t whistlingBird = -1;       // index of bird currently whistling (-1
 static uint32_t lastBirdUpdate = 0;
 static uint32_t nextBirdSpawn = 0;
 
-auto dt = M5.Rtc.getDateTime();
+uint8_t currentH = 0;
+uint8_t currentM = 0;
+uint8_t lastH = 0;
+uint8_t lastM = 0;
+uint8_t theSec = 0;
+
+void setCurrentH(int hour24){
+    if (currentH != hour24) currentH  = hour24;
+    if(currentH != lastH) lastH = currentH;
+}
+
+void setCurrentM(int min59){
+    if (currentM != min59) currentM  = min59;
+    if(currentM != lastM) lastM = currentM;
+}
+
+void setSec(int sec){
+    if (theSec != sec) theSec = sec;
+}
+
+uint8_t solunaOffset() {
+   return currentM > lastM ? ((currentH *2) + currentM) + theSec: (currentH *2) + currentM;
+}
+
+bool isDaytime(){
+  return (currentH < 6 || currentH < 18) ? true : false;
+}
 
 static void spawnBird() {
     // Find inactive slot
@@ -912,6 +938,35 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
         }
     }
 }
+void drawSun(M5Canvas& canvas,int x, int y, int radius) {
+    // 1. Color (RGB565)
+    uint16_t sun = 0xFFE0; // Yellow
+    uint16_t ray = 0xFD20; // Orange
+
+    // 2. Draw the 8 triangular sun rays
+    int rayLength = radius * 0.6; // Scale ray length w/sun radius
+    
+    for (int i = 0; i < 8; i++) {
+        // Calculate angles for 8 rays, 45° apart)
+        float angle = i * (45.0 * PI / 180.0);
+        
+        // Triangle Base
+        int bx1 = x + cos(angle - 0.2) * radius;
+        int by1 = y + sin(angle - 0.2) * radius;
+        int bx2 = x + cos(angle + 0.2) * radius;
+        int by2 = y + sin(angle + 0.2) * radius;
+        
+        // Tip
+        int tx = x + cos(angle) * (radius + rayLength);
+        int ty = y + sin(angle) * (radius + rayLength);
+
+        //Draw
+       canvas.fillTriangle(bx1, by1, bx2, by2, tx, ty, ray);
+    }
+
+    // 3. Draw the center circle (drawn last to overlay and clean up the ray bases)
+    canvas.fillCircle(x, y, radius, sun);
+}
 
 void draw(M5Canvas& canvas, uint16_t colorFG, uint16_t colorBG) {
     // During thunder flash, invert colors for rain/wind (matches sirloin)
@@ -919,15 +974,28 @@ void draw(M5Canvas& canvas, uint16_t colorFG, uint16_t colorBG) {
     //canvas.fillSprite(COLOR_BG);
     // Draw rain as fat pixel columns (2 blocks tall, grid-snapped)
      //Draw a sun or moon
-       int8_t hour = dt.time.hours;
-       hour = hour *2;
-        if(Avatar::isNightTime()){
-        canvas.fillCircle(15+ (hour) ,15,10,0xE71C);
-        canvas.fillCircle(10+ (hour) ,10,10,0);
-        }else{
-            canvas.fillCircle(20+(hour),20,15,0xFFE0);
-        }
+    //  auto dt = M5.Rtc.getDateTime();
+    
+    //  if (dt.date.year >= 2024 && dt.time.hours != currentH) {
+    //     currentH = dt.time.hours;
+    //  }
+
+
+
+      
+      Serial.printf("dt:: %d\n Offset: %d", currentH, solunaOffset());
+
+      
+        if(!isDaytime()){
+            
+        canvas.fillCircle(15 + solunaOffset() ,15,10,0xE71C);
+        canvas.fillCircle(10 + solunaOffset() ,10,10,COLOR_BG);
+
+        }else {
+            if (!rainActive) drawSun(canvas,20 + solunaOffset(),20,15);
         
+       // prevH = currentH;
+        }
     if (rainActive) {
         for (int i = 0; i < RAIN_DROP_COUNT; i++) {
             int16_t rx = birdSnap((int16_t)rainDrops[i].x);

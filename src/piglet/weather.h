@@ -36,5 +36,8 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG);
 // Query for thunder flash state (affects screen colors)
 bool isThunderFlashing();
 bool isRaining();
-
+bool isDaytime();
+void setCurrentH(int hour24);
+void setCurrentM(int min59);
+void setSec(int sec);
 }  // namespace Weather

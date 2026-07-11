@@ -2105,7 +2105,7 @@ void Avatar::updateStars() {
     }
 
     // Night mode transition
-    bool nightNow = isNightTime();
+    bool nightNow =!Weather::isDaytime();
 
     if (nightNow && !starsActive) {
         // Night starting, spawn sequence online

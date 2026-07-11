@@ -80,10 +80,10 @@ uint16_t getColorFG() {
 uint16_t getColorBG() {
      if (Display::useFullColor)
     {
-        if(Avatar::isNightTime) {
-            return 0;
+        if(!Weather::isDaytime()) {
+           return  Weather::isRaining() ? 0: 0x0008;
         } else {
-           return 0x867D;
+           return Weather::isRaining() ? 0x4A6B : 0x867D;
         }
         /* code */
     }
@@ -107,8 +107,9 @@ static void getSystemTimeString(char* out, size_t len) {
 
     struct tm timeinfo;
     gmtime_r(&now, &timeinfo);
-
-    snprintf(out, len, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+    Weather::setCurrentH(timeinfo.tm_hour);
+    Weather::setCurrentM(timeinfo.tm_min);
+    Weather::setSec(timeinfo.tm_sec);
 }
 
 static portMUX_TYPE displayMux = portMUX_INITIALIZER_UNLOCKED;
@@ -236,7 +237,7 @@ void Display::init() {
     // 8-bit RGB332 saves ~50% memory: 240×135×3 sprites × 1 byte = ~97KB vs ~194KB
     M5.Display.setColorDepth(8);
   
-    M5.Display.fillScreen(Avatar::isNightTime ? 0x867D: COLOR_BG);
+    M5.Display.fillScreen(Avatar::isNightTime() ? 0x867D: COLOR_BG);
     M5.Display.setTextColor(COLOR_FG);
     
     

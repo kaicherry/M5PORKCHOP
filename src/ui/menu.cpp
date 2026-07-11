@@ -524,6 +524,12 @@ void Menu::drawRoot(M5Canvas& canvas) {
     uint16_t fg = getColorFG();
     uint16_t bg = getColorBG();
     uint16_t accent = fg;  // Same as COLOR_ACCENT
+    if (Display::useFullColor())
+    {
+        fg = 0xD81F;
+        bg = 0xffff;
+    }
+    
     
     canvas.fillSprite(bg);
     canvas.setTextColor(fg);
@@ -619,6 +625,12 @@ void Menu::drawRoot(M5Canvas& canvas) {
 void Menu::drawModal(M5Canvas& canvas) {
     uint16_t fg = getColorFG();
     uint16_t bg = getColorBG();
+
+    if (Display::useFullColor())
+    {
+        fg = 0xD81F;
+        bg = 0xffff;
+    }
     
     // Modal dimensions - Sirloin-style
     int boxW = 220;
