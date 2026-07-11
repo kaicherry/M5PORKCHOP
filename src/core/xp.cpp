@@ -1937,8 +1937,8 @@ void XP::drawTopBarXP(M5Canvas& topBar) {
     // Format: "L## TITLE +XX XP!" or "L## TITLE ####.... %%"
     
     // Invert top bar
-    topBar.fillSprite(COLOR_FG);
-    topBar.setTextColor(COLOR_BG);
+    topBar.fillSprite(0x001F);
+    topBar.setTextColor(0xFFE0);
     topBar.setTextSize(1);
     topBar.setTextDatum(top_left);
     
