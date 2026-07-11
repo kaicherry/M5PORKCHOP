@@ -2,7 +2,7 @@
 #pragma once
 
 #include <M5Unified.h>
-
+#include "../core/porkchop.h"
 // Forward declarations
 enum class PorkchopMode : uint8_t;
 
@@ -34,7 +34,7 @@ enum class NoticeChannel : uint8_t {
 };
 
 // Theme count and extern declaration (actual array in display.cpp)
-static const uint8_t THEME_COUNT = 16;
+static const uint8_t THEME_COUNT = 17;
 extern const PorkTheme THEMES[THEME_COUNT];
 
 // Dynamic color getters (use these instead of macros)
@@ -65,7 +65,7 @@ public:
     static bool shouldShowUploadProgress();
     static void drawUploadProgress(M5Canvas& topBar);
     static void drawUploadProgressDirect();
-
+    
     // Top bar status messaging (single-line)
     static void setTopBarMessage(const String& message, uint32_t durationMs = 0);
     static void setTopBarMessage(const char* message, uint32_t durationMs = 0);
@@ -95,6 +95,8 @@ public:
                        NoticeChannel channel = NoticeChannel::AUTO);
     static void showLevelUp(uint8_t oldLevel, uint8_t newLevel);  // RPG level up popup
 
+    static bool useFullColor();
+    static PorkchopMode currentMode();
     // Mode-specific UI functions
     static void drawPigSyncDeviceSelect(M5Canvas& canvas);  // PigSync device selection UI
     static void showClassPromotion(const char* oldClass, const char* newClass);  // Class tier promotion popup

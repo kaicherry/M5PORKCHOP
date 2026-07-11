@@ -577,7 +577,7 @@ const char* FlexesScreen::getDebuffDesc(PorkDebuff d) {
 void FlexesScreen::draw(M5Canvas& canvas) {
     if (!active) return;
     
-    canvas.fillSprite(COLOR_BG);
+    canvas.fillSprite(0x4A4A);
     canvas.setTextColor(COLOR_FG);
     
     // Draw tab bar at top
@@ -611,6 +611,8 @@ void FlexesScreen::drawTabBar(M5Canvas& canvas) {
     const int remainder = availableW % totalTabs;
 
     canvas.setTextDatum(middle_center);
+    canvas.setColor(0xffff);
+    canvas.drawFastHLine(0,tabH + (tabY - 1),DISPLAY_W);
     int x = margin;
     for (int i = 0; i < totalTabs; i++) {
         int w = baseW + (i < remainder ? 1 : 0);
@@ -627,17 +629,22 @@ void FlexesScreen::drawTabBar(M5Canvas& canvas) {
             label = "W1GL3";
         }
         if (isActive) {
-            canvas.fillRect(x, tabY, w, tabH, COLOR_FG);
-            canvas.setTextColor(COLOR_BG);
+            canvas.fillRect(x, tabY, w, tabH, 0x4A4A);
+            canvas.drawRect(x, tabY, w, tabH, 0xffff);
+            canvas.setColor(0x4A4A);
+            canvas.drawFastHLine(x,tabY - 1, w);
+            canvas.setTextColor(0xFFE0);
         } else {
-            canvas.drawRect(x, tabY, w, tabH, COLOR_FG);
-            canvas.setTextColor(COLOR_FG);
+            canvas.fillRect(x, tabY, w, tabH, 0);
+            canvas.drawRect(x, tabY, w, tabH, 0xffff);
+            canvas.setTextColor(0xffff);
         }
         canvas.drawString(label, x + w / 2, tabTextY);
         x += w + spacing;
     }
+    
     // Reset text color
-    canvas.setTextColor(COLOR_FG);
+    canvas.setTextColor(0xffff);
 }
 
 void FlexesScreen::drawStatsTab(M5Canvas& canvas) {
@@ -652,6 +659,7 @@ void FlexesScreen::drawStatsTab(M5Canvas& canvas) {
     
     // Show title with indicator if it's an override
     char lvlBuf[48];
+    canvas.setTextColor(0x27E0);
     if (XP::getTitleOverride() != TitleOverride::NONE) {
         // Show override title with asterisk
         snprintf(lvlBuf, sizeof(lvlBuf), "LVL %d: %s*", level, title);
@@ -662,19 +670,21 @@ void FlexesScreen::drawStatsTab(M5Canvas& canvas) {
     
     // Class on right
     char classBuf[24];
+    canvas.setTextColor(0x4A4A);
     snprintf(classBuf, sizeof(classBuf), "T13R: %s", className);
     canvas.setTextDatum(top_right);
     canvas.drawString(classBuf, DISPLAY_W - 5, 14);
-    
+    canvas.setTextColor(0x27E0);
     // XP bar
     int barX = 5;
     int barY = 24;
     int barW = DISPLAY_W - 10;
     int barH = 6;
-    canvas.drawRect(barX, barY, barW, barH, COLOR_FG);
+    canvas.fillRect(barX, barY, barW, barH, 0);
+    canvas.drawRect(barX, barY, barW, barH, 0xffff);
     int fillW = (barW - 2) * progress / 100;
     if (fillW > 0) {
-        canvas.fillRect(barX + 1, barY + 1, fillW, barH - 2, COLOR_FG);
+        canvas.fillRect(barX + 1, barY + 1, fillW, barH - 2, 0x27E0);
     }
     
     // XP text centered under bar
@@ -682,7 +692,7 @@ void FlexesScreen::drawStatsTab(M5Canvas& canvas) {
     snprintf(xpBuf, sizeof(xpBuf), "%lu XP (%d%%)", (unsigned long)XP::getTotalXP(), progress);
     canvas.setTextDatum(top_center);
     canvas.drawString(xpBuf, DISPLAY_W / 2, 32);
-    
+    canvas.setTextColor(0xffff);
     // Stats grid
     drawStats(canvas);
 }

@@ -8,7 +8,6 @@
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/portmacro.h>
-#include "../core/porkchop.h"
 #include "../core/config.h"
 #include "../core/xp.h"
 #include "../core/challenges.h"
@@ -48,6 +47,7 @@
 // Theme definitions
 const PorkTheme THEMES[THEME_COUNT] = {
     // Dark modes - colored text on black (RGB332-compatible)
+    {"C0LR",      0xF92A, 0x001F},
     {"P1NK",      0xF92A, 0x0000},  // Default piglet pink - RGB332-quantized
     {"CYB3R",     0x07E0, 0x0000},  // Cyan/tron - RGB332-quantized
     {"PCMDR64",   0xDED5, 0x4A4A},  // Porkchop Commandor 64 - RGB332-quantized
@@ -66,19 +66,33 @@ const PorkTheme THEMES[THEME_COUNT] = {
     {"B4NSH33",   0x27E0, 0x0000},  // P1 phosphor green CRT - RGB332-quantized
     {"M1XYL1TTL3", 0x95AA, 0x0360}, // Inverted Game Boy LCD - RGB332-quantized
     {"jader0xF2", 0xD81F, 0x0000},  // Bright purple on black - RGB332-quantized
+     // Colorful Word - RGB332-quantized
 };
 
+
 uint16_t getColorFG() {
+   
     uint8_t idx = Config::personality().themeIndex;
     if (idx >= THEME_COUNT) idx = 0;
     return THEMES[idx].fg;
 }
 
 uint16_t getColorBG() {
+     if (Display::useFullColor)
+    {
+        if(Avatar::isNightTime) {
+            return 0;
+        } else {
+           return 0x5300;
+        }
+        /* code */
+    }
+
     uint8_t idx = Config::personality().themeIndex;
     if (idx >= THEME_COUNT) idx = 0;
     return THEMES[idx].bg;
 }
+
 
 static void getSystemTimeString(char* out, size_t len) {
     if (!out || len == 0) return;
@@ -101,13 +115,13 @@ static portMUX_TYPE displayMux = portMUX_INITIALIZER_UNLOCKED;
 
 static void drawHeartIcon(M5Canvas& canvas, int x, int y, uint16_t color) {
     // Upright heart built from two circles + triangle
-    canvas.fillCircle(x + 2, y + 2, 2, color);
-    canvas.fillCircle(x + 6, y + 2, 2, color);
-    canvas.fillTriangle(x, y + 3, x + 8, y + 3, x + 4, y + 6, color);
+    canvas.fillCircle(x + 2, y + 2, 2, 0xF800);
+    canvas.fillCircle(x + 6, y + 2, 2, 0xF800);
+    canvas.fillTriangle(x, y + 3, x + 8, y + 3, x + 4, y + 6, 0xF800);
 }
 
 static void drawTopBarHeapHealth(M5Canvas& topBar, uint16_t fg, uint16_t bg) {
-    topBar.fillSprite(fg);
+    topBar.fillSprite(0xffff);
     topBar.setTextColor(bg);
     topBar.setTextSize(1);
     topBar.setTextDatum(top_left);
@@ -172,6 +186,7 @@ uint32_t Display::lastActivityTime = 0;
 bool Display::dimmed = false;
 bool Display::screenForcedOff = false;
 bool Display::snapping = false;
+PorkchopMode mode = PorkchopMode::IDLE;
 
 // Screen shake state
 bool Display::screenShakeActive = false;
@@ -220,8 +235,11 @@ void Display::init() {
     // Must explicitly set sprite color depth - they don't inherit from display
     // 8-bit RGB332 saves ~50% memory: 240×135×3 sprites × 1 byte = ~97KB vs ~194KB
     M5.Display.setColorDepth(8);
+
     
-    M5.Display.fillScreen(COLOR_BG);
+    
+    
+    M5.Display.fillScreen(Avatar::isNightTime ? 0x5300: COLOR_BG);
     M5.Display.setTextColor(COLOR_FG);
     
     // CRITICAL: setColorDepth MUST be called BEFORE createSprite.
@@ -279,7 +297,7 @@ void Display::update() {
 
     // Check for screen dimming
     updateDimming();
-
+    mainCanvas.fillSprite(0x5300);
     // SD Format mode hides bars to save RAM for disk operations
     bool barsHidden = SdFormatMenu::areBarsHidden() || ChargingMode::areBarsHidden();
 
@@ -303,6 +321,9 @@ void Display::update() {
     // Thunder flash inverts the background color, FG becomes BG
     // This must happen BEFORE avatar is drawn so pig/grass/rain can use inverted colors
     uint16_t bgColor = bg;
+    if(useFullColor){
+        if(Avatar::isNightTime) bgColor = 0x5300;
+    }
     if (useAvatarWeather) {
         Weather::setMoodLevel(Mood::getEffectiveHappiness());
         Weather::update();
@@ -320,8 +341,8 @@ void Display::update() {
         case PorkchopMode::IDLE:
             Avatar::draw(mainCanvas);
             Weather::drawBirds(mainCanvas, fg);
-            Weather::drawClouds(mainCanvas, fg);
-            Weather::draw(mainCanvas, fg, bg);
+            Weather::drawClouds(mainCanvas, 0xffff);
+            Weather::draw(mainCanvas, fg, bgColor);
             Mood::draw(mainCanvas);
             break;
 
@@ -331,7 +352,7 @@ void Display::update() {
         case PorkchopMode::PIGGYBLUES_MODE:
             Avatar::draw(mainCanvas);
             Weather::drawBirds(mainCanvas, fg);
-            Weather::drawClouds(mainCanvas, fg);
+            Weather::drawClouds(mainCanvas, 0xffff);
             Weather::draw(mainCanvas, fg, bg);
             Mood::draw(mainCanvas);
             break;
@@ -550,10 +571,16 @@ void Display::update() {
         if (boxY < 0) boxY = 0;
 
         // Inverted toast: fg border, bg fill, fg text
-        mainCanvas.fillRoundRect(boxX - 2, boxY - 2, boxW + 4, boxH + 4, 8, fg);
-        mainCanvas.fillRoundRect(boxX, boxY, boxW, boxH, 8, bg);
+        mainCanvas.fillRoundRect(boxX - 2, boxY - 2, boxW + 4, boxH + 4, 8, 0xffff);
+        mainCanvas.fillRoundRect(boxX, boxY, boxW, boxH, 8, useFullColor ? 0x4A4A: bg);
+        
+        if(useFullColor){
+            mainCanvas.setTextColor(0xffff, 0x4A4A);
+        } else {
+            mainCanvas.setTextColor(fg, bg);
+        }
 
-        mainCanvas.setTextColor(fg, bg);
+        
         mainCanvas.setTextDatum(MC_DATUM);
 
         // Draw each line centered
@@ -662,8 +689,15 @@ void Display::pushAll() {
 
 void Display::drawTopBar() {
     // Cache theme colors for this function
-    const uint16_t fg = getColorFG();
-    const uint16_t bg = getColorBG();
+     uint16_t fg = COLOR_FG;
+     uint16_t bg = COLOR_BG;
+
+    if (useFullColor)
+    {
+        fg = 0xffff;
+        bg = 0x4A4A;
+    }
+    
 
     topBarMessageTwoLineActive = false;
 
@@ -673,7 +707,7 @@ void Display::drawTopBar() {
             topBarMessage[0] = '\0';
         } else if (strchr(topBarMessage, '\n')) {
             topBarMessageTwoLineActive = true;
-            topBar.fillSprite(fg);
+            topBar.fillSprite(bg);
             return;
         }
     }
@@ -702,8 +736,8 @@ void Display::drawTopBar() {
         if (topBarMessageDuration > 0 && (millis() - topBarMessageStart) > topBarMessageDuration) {
             topBarMessage[0] = '\0';
         } else {
-            topBar.fillSprite(fg);
-            topBar.setTextColor(bg);
+            topBar.fillSprite(bg);
+            topBar.setTextColor(fg);
             topBar.setTextSize(1);
             topBar.setTextDatum(top_left);
             char msgBuf[96];
@@ -739,7 +773,7 @@ void Display::drawTopBar() {
             break;
         case PorkchopMode::OINK_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "OINKS");
-            modeColor = fg;
+            modeColor = useFullColor ? 0xF92A : fg;
             break;
         case PorkchopMode::DNH_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "DONOHAM");
@@ -747,15 +781,15 @@ void Display::drawTopBar() {
             break;
         case PorkchopMode::WARHOG_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "SGT WARHOG");
-            modeColor = fg;
+            modeColor = useFullColor ? 0x27E0 : fg;
             break;
         case PorkchopMode::PIGGYBLUES_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "BLUES");
-            modeColor = fg;
+            modeColor = useFullColor ? 0x001F : fg;
             break;
         case PorkchopMode::SPECTRUM_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "HOG ON SPECTRUM");
-            modeColor = fg;
+            modeColor = useFullColor ? 0xD81F : fg;
             break;
         case PorkchopMode::MENU:
             snprintf(modeBuf, sizeof(modeBuf), "MENU");
@@ -899,6 +933,9 @@ void Display::drawTopBar() {
     topBar.setTextColor(fg);
     topBar.setTextDatum(top_right);
     topBar.drawString(rightBuf, DISPLAY_W - 2, 2);
+    topBar.setColor(0);
+    topBar.drawRect(0,0,topBar.width(),topBar.height());
+    //topBar.drawFastHLine(0,topBar.height(), topBar.width());
 }
 
 void Display::drawTopBarMessageTwoLineDirect(int offsetX, int offsetY) {
@@ -941,8 +978,14 @@ void Display::drawTopBarMessageTwoLineDirect(int offsetX, int offsetY) {
     truncateLine(line1Buf);
     truncateLine(line2Buf);
 
-    uint16_t fg = getColorFG();
-    uint16_t bg = getColorBG();
+     uint16_t fg = COLOR_FG;
+     uint16_t bg = COLOR_BG;
+
+    if (useFullColor)
+    {
+        fg = 0xffff;
+        bg = 0x4A4A;
+    }
     M5Cardputer.Display.fillRect(offsetX, offsetY, DISPLAY_W, TOP_BAR_H * 2, fg);
     M5Cardputer.Display.setTextColor(bg, fg);
     M5Cardputer.Display.setTextSize(1);
@@ -955,18 +998,24 @@ void Display::drawTopBarMessageTwoLineDirect(int offsetX, int offsetY) {
 
 void Display::drawBottomBar() {
     // Cache theme colors for this function
-    const uint16_t fg = getColorFG();
-    const uint16_t bg = getColorBG();
+     uint16_t fg = COLOR_FG;
+     uint16_t bg = COLOR_BG;
+
+    if (useFullColor)
+    {
+        fg = 0xffff;
+        bg = 0x4A4A;
+    }
 
     PorkchopMode mode = porkchop.getMode();
 
     // Set colors based on mode - PIGSYNC_DEVICE_SELECT uses normal colors, others use inverted
     if (mode == PorkchopMode::PIGSYNC_DEVICE_SELECT) {
-        bottomBar.fillSprite(bg);
-        bottomBar.setTextColor(fg);
+        bottomBar.fillSprite(0xFFFF);
+        bottomBar.setTextColor(0);
     } else {
-        bottomBar.fillSprite(fg);  // Inverted: FG background
-        bottomBar.setTextColor(bg);  // Inverted: BG text
+        bottomBar.fillSprite(0xFFFF);  // Inverted: FG background
+        bottomBar.setTextColor(0);  // Inverted: BG text
     }
     bottomBar.setTextSize(1);
     bottomBar.setTextDatum(top_left);
@@ -1166,7 +1215,7 @@ void Display::drawBottomBar() {
         bottomBar.drawRect(barX, barY, barW, barH, bg);
         int fillW = (barW - 2) * pct / 100;
         if (fillW > 0) {
-            bottomBar.fillRect(barX + 1, barY + 1, fillW, barH - 2, bg);
+            bottomBar.fillRect(barX + 1, barY + 1, fillW, barH - 2, useFullColor ? 0x27E0: fg);
         }
 
         char pctBuf[8];
@@ -1207,6 +1256,8 @@ void Display::drawBottomBar() {
         snprintf(uptimeBuf, sizeof(uptimeBuf), "%u:%02u", mins, secs);
         bottomBar.drawString(uptimeBuf, DISPLAY_W - 2, 3);
     }
+    bottomBar.setColor(0x0360);
+    bottomBar.drawRect(0,0,bottomBar.width(),bottomBar.height());
 }
 
 void Display::showInfoBox(const char* title, const char* line1,
@@ -1429,12 +1480,19 @@ void Display::showBootSplash() {
     M5.Display.setColorDepth(8);
 
     // Screen 1: OINK OINK
-    M5.Display.fillScreen(COLOR_BG);
+    M5.Display.fillScreen(useFullColor ? 0xffff: COLOR_BG);
     M5.Display.setTextColor(COLOR_FG);
     M5.Display.setTextDatum(middle_center);
     M5.Display.setTextSize(4);
     M5.Display.drawString("OINK", DISPLAY_W / 2, DISPLAY_H / 2 - 20);
-    M5.Display.drawString("OINK", DISPLAY_W / 2, DISPLAY_H / 2 + 20);
+    if(useFullColor){
+        M5.Display.setTextColor(0xd81f);
+        M5.Display.drawString("OINK", DISPLAY_W / 2, DISPLAY_H / 2 + 20);
+        M5.Display.setTextColor(COLOR_FG);
+    } else {
+        M5.Display.drawString("OINK", DISPLAY_W / 2, DISPLAY_H / 2 + 20);
+    }
+    
     
     // Pig wake-up grunt: "oink oink"
     SFX::play(SFX::BOOT);
@@ -1442,21 +1500,24 @@ void Display::showBootSplash() {
     bootSplashDelay(800);
     
     // Screen 2: MY NAME IS
-    M5.Display.fillScreen(COLOR_BG);
+    M5.Display.fillScreen(useFullColor? 0xffff: COLOR_BG);
     M5.Display.setTextSize(3);
     M5.Display.drawString("MY NAME IS", DISPLAY_W / 2, DISPLAY_H / 2);
     bootSplashDelay(800);
     
     // Screen 3: PORKCHOP in big stylized text
-    M5.Display.fillScreen(COLOR_BG);
+    M5.Display.fillScreen(useFullColor? 0xffff: COLOR_BG);
     M5.Display.setTextDatum(middle_center);
     M5.Display.setTextSize(3);
+    M5.Display.setTextColor(0xD81F);
     M5.Display.drawString("PORKCHOP", DISPLAY_W / 2, DISPLAY_H / 2 - 15);
     
     // Subtitle
     M5.Display.setTextSize(1);
+    M5.Display.setTextColor(0);
     M5.Display.drawString("BASICALLY YOU, BUT AS AN ASCII PIG.", DISPLAY_W / 2, DISPLAY_H / 2 + 20);
-    M5.Display.drawString("IDENTITY CRISIS EDITION.", DISPLAY_W / 2, DISPLAY_H / 2 + 35);
+    M5.Display.setTextColor(0x001F);
+    M5.Display.drawString("IDENTITY CRISIS EDITION. SO PRETTY.", DISPLAY_W / 2, DISPLAY_H / 2 + 35);
 
     bootSplashDelay(1200);
 
@@ -1624,6 +1685,10 @@ void Display::clearTopBarMessage() {
 #define LED_PIN 21
 #define SIREN_COOLDOWN_MS 2000
 
+PorkchopMode Display::currentMode(){
+    return porkchop.getMode();
+}
+
 void Display::flashSiren(uint8_t cycles) {
     // DISABLED: LED flashing during promiscuous mode causes timing issues
     // The neopixelWrite() uses RMT peripheral which conflicts with WiFi callbacks
@@ -1676,13 +1741,13 @@ void Display::showLevelUp(uint8_t oldLevel, uint8_t newLevel) {
     int boxX = (DISPLAY_W - boxW) / 2;
     int boxY = (MAIN_H - boxH) / 2;
     
-    mainCanvas.fillSprite(COLOR_BG);
+    mainCanvas.fillSprite(0x27E0);
 
     // Inverted toast: fg border, bg fill, fg text
     mainCanvas.fillRoundRect(boxX - 2, boxY - 2, boxW + 4, boxH + 4, 8, COLOR_FG);
-    mainCanvas.fillRoundRect(boxX, boxY, boxW, boxH, 8, COLOR_BG);
+    mainCanvas.fillRoundRect(boxX, boxY, boxW, boxH, 8, 0x27E0);
 
-    mainCanvas.setTextColor(COLOR_FG, COLOR_BG);
+    mainCanvas.setTextColor(COLOR_FG, 0x27E0);
     mainCanvas.setTextDatum(top_center);
     mainCanvas.setTextSize(1);
     mainCanvas.setFont(&fonts::Font0);
@@ -1743,6 +1808,15 @@ void Display::showLevelUp(uint8_t oldLevel, uint8_t newLevel) {
         delay(33);
         yield();  // Feed watchdog during long celebration
     }
+}
+
+ bool Display::useFullColor()
+{
+     if (Config::personality().themeIndex > 0 )
+   {
+    return false ; 
+   }
+    return true;
 }
 
 void Display::showClassPromotion(const char* oldClass, const char* newClass) {
@@ -3303,8 +3377,8 @@ void Display::drawUploadProgress(M5Canvas& topBar) {
     // Format: "UPLOAD XX% [::.]"
 
     // Use same styling as XP notification: inverted colors
-    topBar.fillSprite(COLOR_FG);  // Same as XP: use FG color as background
-    topBar.setTextColor(COLOR_BG);  // Same as XP: use BG color as text
+    topBar.fillSprite(useFullColor ? 0x4A4A : COLOR_FG);  // Same as XP: use FG color as background
+    topBar.setTextColor(useFullColor ? 0xffff : COLOR_FG);  // Same as XP: use BG color as text
     topBar.setTextSize(1);
     topBar.setTextDatum(top_left);  // Align left part to left
 
@@ -3344,8 +3418,13 @@ void Display::drawUploadProgressDirect() {
 
     // Use same styling as XP notification: inverted theme colors
     // Get theme colors dynamically
-    uint16_t fgColor = getColorFG();
-    uint16_t bgColor = getColorBG();
+    uint16_t fgColor = COLOR_FG;
+    uint16_t bgColor = COLOR_BG;
+
+    if(useFullColor) {
+        fgColor = 0xffff;
+         bgColor = 0x4A4A;
+    }
 
     // Draw in top-left corner directly to physical display with inverted colors (like XP notification)
     M5Cardputer.Display.setTextColor(bgColor, fgColor);  // Use BG color as text, FG color as background
