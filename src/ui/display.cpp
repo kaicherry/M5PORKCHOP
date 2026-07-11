@@ -83,7 +83,7 @@ uint16_t getColorBG() {
         if(Avatar::isNightTime) {
             return 0;
         } else {
-           return 0x5300;
+           return 0x867D;
         }
         /* code */
     }
@@ -235,12 +235,10 @@ void Display::init() {
     // Must explicitly set sprite color depth - they don't inherit from display
     // 8-bit RGB332 saves ~50% memory: 240×135×3 sprites × 1 byte = ~97KB vs ~194KB
     M5.Display.setColorDepth(8);
-
-    
-    
-    
-    M5.Display.fillScreen(Avatar::isNightTime ? 0x5300: COLOR_BG);
+  
+    M5.Display.fillScreen(Avatar::isNightTime ? 0x867D: COLOR_BG);
     M5.Display.setTextColor(COLOR_FG);
+    
     
     // CRITICAL: setColorDepth MUST be called BEFORE createSprite.
     // M5GFX allocates the sprite buffer in createSprite() using the current depth.
@@ -251,6 +249,7 @@ void Display::init() {
 
     mainCanvas.setColorDepth(8);
     mainCanvas.createSprite(DISPLAY_W, MAIN_H);
+    mainCanvas.fillSprite(COLOR_BG);
 
     bottomBar.setColorDepth(8);
     bottomBar.createSprite(DISPLAY_W, BOTTOM_BAR_H);
@@ -297,7 +296,7 @@ void Display::update() {
 
     // Check for screen dimming
     updateDimming();
-    mainCanvas.fillSprite(0x5300);
+    mainCanvas.fillSprite(COLOR_BG);
     // SD Format mode hides bars to save RAM for disk operations
     bool barsHidden = SdFormatMenu::areBarsHidden() || ChargingMode::areBarsHidden();
 
@@ -322,7 +321,7 @@ void Display::update() {
     // This must happen BEFORE avatar is drawn so pig/grass/rain can use inverted colors
     uint16_t bgColor = bg;
     if(useFullColor){
-        if(Avatar::isNightTime) bgColor = 0x5300;
+         bgColor = COLOR_BG;
     }
     if (useAvatarWeather) {
         Weather::setMoodLevel(Mood::getEffectiveHappiness());
@@ -353,7 +352,7 @@ void Display::update() {
             Avatar::draw(mainCanvas);
             Weather::drawBirds(mainCanvas, fg);
             Weather::drawClouds(mainCanvas, 0xffff);
-            Weather::draw(mainCanvas, fg, bg);
+            Weather::draw(mainCanvas, fg, bgColor);
             Mood::draw(mainCanvas);
             break;
 
