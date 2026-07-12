@@ -235,7 +235,8 @@ uint8_t Menu::lootHintIndex[Menu::GROUP_LOOT_SIZE] = {0};
 uint8_t Menu::commsHintIndex[Menu::GROUP_COMMS_SIZE] = {0};
 uint8_t Menu::rankHintIndex[Menu::GROUP_RANK_SIZE] = {0};
 uint8_t Menu::systemHintIndex[Menu::GROUP_SYSTEM_SIZE] = {0};
-
+int16_t fg = 0;
+uint16_t bg = 0;
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -295,6 +296,8 @@ void Menu::init() {
     activeGroup = GroupId::NONE;
     modalIdx = 0;
     modalScroll = 0;
+    fg = getColorFG();
+    bg = getColorBG();
     // Seed root hint selection
     for (uint8_t i = 0; i < ROOT_COUNT && i < sizeof(rootHintIndex)/sizeof(rootHintIndex[0]); i++) {
         if (ROOT_ITEMS[i].hintCount > 0) {
@@ -521,10 +524,14 @@ void Menu::draw(M5Canvas& canvas) {
 }
 
 void Menu::drawRoot(M5Canvas& canvas) {
-    uint16_t fg = getColorFG();
-    uint16_t bg = getColorBG();
+    
     uint16_t accent = fg;  // Same as COLOR_ACCENT
     
+    if (Display::useFullColor())
+    {
+        fg = 0xD81F;
+        bg = 0xffff;
+    }
     canvas.fillSprite(bg);
     canvas.setTextColor(fg);
     
@@ -617,8 +624,6 @@ void Menu::drawRoot(M5Canvas& canvas) {
 }
 
 void Menu::drawModal(M5Canvas& canvas) {
-    uint16_t fg = getColorFG();
-    uint16_t bg = getColorBG();
     
     // Modal dimensions - Sirloin-style
     int boxW = 220;

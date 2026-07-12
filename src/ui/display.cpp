@@ -80,10 +80,10 @@ uint16_t getColorFG() {
 uint16_t getColorBG() {
      if (Display::useFullColor)
     {
-        if(Avatar::isNightTime) {
-            return 0;
+        if(Weather::isDayTime()) {
+            return Weather::isRaining() ? 0x4A6B : 0x867D;
         } else {
-           return 0x867D;
+           return  Weather::isRaining() ? 0: 0x0008;
         }
         /* code */
     }
@@ -109,6 +109,7 @@ static void getSystemTimeString(char* out, size_t len) {
     gmtime_r(&now, &timeinfo);
 
     snprintf(out, len, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+    Weather::setHMS( timeinfo.tm_hour, timeinfo.tm_min);
 }
 
 static portMUX_TYPE displayMux = portMUX_INITIALIZER_UNLOCKED;
@@ -122,7 +123,7 @@ static void drawHeartIcon(M5Canvas& canvas, int x, int y, uint16_t color) {
 
 static void drawTopBarHeapHealth(M5Canvas& topBar, uint16_t fg, uint16_t bg) {
     topBar.fillSprite(0xffff);
-    topBar.setTextColor(bg);
+    topBar.setTextColor(HeapHealth::isToastImproved() ? 0x27E0:0xF800 );
     topBar.setTextSize(1);
     topBar.setTextDatum(top_left);
 
@@ -190,6 +191,7 @@ PorkchopMode mode = PorkchopMode::IDLE;
 
 // Screen shake state
 bool Display::screenShakeActive = false;
+bool timeSeeded = false;
 uint32_t Display::screenShakeStart = 0;
 uint16_t Display::screenShakeDuration = 200;
 uint8_t Display::screenShakeIntensity = 3;
@@ -228,6 +230,37 @@ void Display::showLoot(const char* ssid) {
 
 extern Porkchop porkchop;
 
+void drawSun(M5Canvas& canvas,int x, int y, int radius) {
+    // 1. Color (RGB565)
+    uint16_t sun = 0xFFE0; // Yellow
+    uint16_t ray = 0xFD20; // Orange
+
+    // 2. Draw the 8 triangular sun rays
+    int rayLength = radius * 0.6; // Scale ray length w/sun radius
+    
+    for (int i = 0; i < 8; i++) {
+        // Calculate angles for 8 rays, 45° apart)
+        float angle = i * (45.0 * PI / 180.0);
+        
+        // Triangle Base
+        int bx1 = x + cos(angle - 0.2) * radius;
+        int by1 = y + sin(angle - 0.2) * radius;
+        int bx2 = x + cos(angle + 0.2) * radius;
+        int by2 = y + sin(angle + 0.2) * radius;
+        
+        // Tip
+        int tx = x + cos(angle) * (radius + rayLength);
+        int ty = y + sin(angle) * (radius + rayLength);
+
+        //Draw
+       canvas.fillTriangle(bx1, by1, bx2, by2, tx, ty, ray);
+       Serial.println("SunCalled");
+    }
+
+    // 3. Draw the center circle (drawn last to overlay and clean up the ray bases)
+    canvas.fillCircle(x, y, radius, sun);
+}
+
 void Display::init() {
     M5.Display.setRotation(1);
     
@@ -236,8 +269,7 @@ void Display::init() {
     // 8-bit RGB332 saves ~50% memory: 240×135×3 sprites × 1 byte = ~97KB vs ~194KB
     M5.Display.setColorDepth(8);
   
-    M5.Display.fillScreen(Avatar::isNightTime ? 0x867D: COLOR_BG);
-    M5.Display.setTextColor(COLOR_FG);
+   
     
     
     // CRITICAL: setColorDepth MUST be called BEFORE createSprite.
@@ -265,6 +297,8 @@ void Display::init() {
     
     // Initialize weather system
     Weather::init();
+     M5.Display.fillScreen(Weather::isDayTime() ? COLOR_BG: 0x867D);
+    M5.Display.setTextColor(COLOR_FG);
     
     Serial.println("[DISPLAY] Initialized");
 }
@@ -308,6 +342,7 @@ void Display::update() {
         bottomBar.fillSprite(bg);
     }
 
+
     PorkchopMode mode = porkchop.getMode();
     bool useAvatarWeather = (mode == PorkchopMode::IDLE ||
         mode == PorkchopMode::OINK_MODE ||
@@ -339,6 +374,12 @@ void Display::update() {
     switch (mode) {
         case PorkchopMode::IDLE:
             Avatar::draw(mainCanvas);
+              if(!Weather::isRaining && Weather::isDayTime()) {
+                drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
+                }else {
+                    mainCanvas.fillCircle(Weather::getSolunaPos() +5 ,15,10,0xE71C);
+                    mainCanvas.fillCircle(Weather::getSolunaPos(),10,10,COLOR_BG);
+                }
             Weather::drawBirds(mainCanvas, fg);
             Weather::drawClouds(mainCanvas, 0xffff);
             Weather::draw(mainCanvas, fg, bgColor);
@@ -888,6 +929,11 @@ void Display::drawTopBar() {
     char timeBuf[8];
     if (GPS::hasFix()) {
         GPS::getTimeString(timeBuf, sizeof(timeBuf));
+        if(!timeSeeded) { 
+            getSystemTimeString(timeBuf, sizeof(timeBuf)); 
+            timeSeeded=true;
+        }
+        
     } else {
         getSystemTimeString(timeBuf, sizeof(timeBuf));
     }
@@ -909,7 +955,6 @@ void Display::drawTopBar() {
     char rightBuf[32];
     snprintf(rightBuf, sizeof(rightBuf), "%d%% %s %s", battLevel, statusBuf, timeBuf);
     int rightWidth = topBar.textWidth(rightBuf);
-    
     // Truncate left string if it would overlap right side
     int maxLeftWidth = DISPLAY_W - rightWidth - 8;  // 8px margin
     char leftBuf[80];
