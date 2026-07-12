@@ -823,7 +823,7 @@ void drawClouds(M5Canvas& canvas, uint16_t colorFG) {
     for (int i = 0; i < MAX_CLOUDS; i++) {
         if (!clouds[i].active || clouds[i].scale == 0) continue;
         float scaleFactor = (float)clouds[i].scale / 255.0f;
-        drawColor = rainActive ? 0x4A49 : 0xFFFF;
+        drawColor = rainActive ? 0x632C : 0xFFFF;
         for (int p = 0; p < clouds[i].puffCount; p++) {
             int r = (int)((float)clouds[i].puffs[p].radius * scaleFactor * rainBoost + 0.5f);
             if (r < 1) continue;
