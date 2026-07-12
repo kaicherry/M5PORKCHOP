@@ -607,14 +607,14 @@ void Avatar::updateAndDrawSparkles(M5Canvas& canvas) {
 void Avatar::draw(M5Canvas& canvas) {
     uint32_t now = millis();
   //une 7, 195 April 21, June 25, 1984
-    if (!Weather::isDayTime())
-    {
-        canvas.fillSprite(COLOR_BG);
-        canvas.fillCircle(Weather::getSolunaPos(),15,10,0xE71C);
-        canvas.fillCircle(Weather::getSolunaPos()-10 ,10,10,COLOR_BG);
-    }else{
-       if(!Weather::isRaining()) Weather::drawSun(canvas,Weather::getSolunaPos(),10,20);
-    }
+    // if (!Weather::isDayTime())
+    // {
+    //     canvas.fillSprite(COLOR_BG);
+    //     canvas.fillCircle(Weather::getSolunaPos(),15,10,0xE71C);
+    //     canvas.fillCircle(Weather::getSolunaPos()-10 ,10,10,COLOR_BG);
+    // }else{
+    //    if(!Weather::isRaining()) drawSun(canvas,Weather::getSolunaPos(),10,20);
+    // }
     
         
     // Sniff animation times out after SNIFF_DURATION_MS

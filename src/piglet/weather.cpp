@@ -139,8 +139,8 @@ void setHMS(int h, int m){
 
 int getSolunaPos(){
     //calc ( ( 12) *   currentH) +  20
-    return  (6 * currentH - 30)  + currentM; //(((12 * currentH) +20) + currentM) + scs;
-}
+    return  (6 * (currentH > 0 ? currentH: 2) - 30)  + currentM + (currentM%5 == 0 ? 1:0); //(((12 * currentH) +20) + currentM) + scs;
+}//////////////////
 static void spawnBird() {
     // Find inactive slot
     int slot = -1;
@@ -823,7 +823,7 @@ void drawClouds(M5Canvas& canvas, uint16_t colorFG) {
     for (int i = 0; i < MAX_CLOUDS; i++) {
         if (!clouds[i].active || clouds[i].scale == 0) continue;
         float scaleFactor = (float)clouds[i].scale / 255.0f;
-        drawColor = rainActive ? 0xD69A : 0xFFFF;
+        drawColor = rainActive ? 0x4A4A : 0xFFFF;
         for (int p = 0; p < clouds[i].puffCount; p++) {
             int r = (int)((float)clouds[i].puffs[p].radius * scaleFactor * rainBoost + 0.5f);
             if (r < 1) continue;
@@ -856,8 +856,8 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
 
     if (Display::useFullColor()) 
     {
-        drawColor = 0x4A4A;
-        brdClr = 0x4A4A;
+        drawColor = 0x5A24;
+        brdClr = 0x5A24;
         boomClr = 0xff00;
     }
     for (int i = 0; i < 2; i++) {
@@ -867,19 +867,19 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
         if (!b.falling) {
             // Flying bird: body (center) + 2 wing pixels that flap up/down
             int16_t bx = birdSnap((int16_t)b.x);
-            int16_t bodyY = birdSnap(b.y + ((b.sinePhase & brdClr) ? BIRD_PX : 0));
+            int16_t bodyY = birdSnap(b.y + ((b.sinePhase & 0xFFE0) ? BIRD_PX : 0));
             bool wingsUp = (b.sinePhase & 0x04) != 0;  // flap faster than bob
             int16_t wingY = wingsUp ? (bodyY - BIRD_PX) : (bodyY + BIRD_PX);
-            canvas.fillRect(bx, wingY, BIRD_PX, BIRD_PX, drawColor);                       // left wing
-            canvas.fillRect(bx + 2 * BIRD_PX, wingY, BIRD_PX, BIRD_PX, drawColor);         // right wing
-            canvas.fillRect(bx + BIRD_PX, bodyY, BIRD_PX, BIRD_PX, drawColor);             // body
+            canvas.fillRect(bx, wingY, BIRD_PX, BIRD_PX, brdClr);                       // left wing
+            canvas.fillRect(bx + 2 * BIRD_PX, wingY, BIRD_PX, BIRD_PX, brdClr);         // right wing
+            canvas.fillRect(bx + BIRD_PX, bodyY, BIRD_PX, BIRD_PX, 0xFFE0);             // body
         } else {
             // Falling bird: tumbling 2-block dot on PX grid
             int16_t fx = birdSnap((int16_t)b.fallX);
             int16_t fy = birdSnap((int16_t)b.fallY);
             if (fy >= 0 && fy < 107) {
-                canvas.fillRect(fx, fy, BIRD_PX, BIRD_PX, drawColor);
-                canvas.fillRect(fx + BIRD_PX, fy, BIRD_PX, BIRD_PX, drawColor);
+                canvas.fillRect(fx, fy, BIRD_PX, BIRD_PX, brdClr);
+                canvas.fillRect(fx + BIRD_PX, fy, BIRD_PX, BIRD_PX,0xFFE0);
             }
         }
     }
@@ -934,36 +934,7 @@ void drawBirds(M5Canvas& canvas, uint16_t colorFG) {
     }
 }
 
-void drawSun(M5Canvas& canvas,int x, int y, int radius) {
-    // 1. Color (RGB565)
-    uint16_t sun = 0xFFE0; // Yellow
-    uint16_t ray = 0xFD20; // Orange
 
-    // 2. Draw the 8 triangular sun rays
-    int rayLength = radius * 0.6; // Scale ray length w/sun radius
-    
-    for (int i = 0; i < 8; i++) {
-        // Calculate angles for 8 rays, 45° apart)
-        float angle = i * (45.0 * PI / 180.0);
-        
-        // Triangle Base
-        int bx1 = x + cos(angle - 0.2) * radius;
-        int by1 = y + sin(angle - 0.2) * radius;
-        int bx2 = x + cos(angle + 0.2) * radius;
-        int by2 = y + sin(angle + 0.2) * radius;
-        
-        // Tip
-        int tx = x + cos(angle) * (radius + rayLength);
-        int ty = y + sin(angle) * (radius + rayLength);
-
-        //Draw
-       canvas.fillTriangle(bx1, by1, bx2, by2, tx, ty, ray);
-       Serial.println("SunCalled");
-    }
-
-    // 3. Draw the center circle (drawn last to overlay and clean up the ray bases)
-    canvas.fillCircle(x, y, radius, sun);
-}
 
 void draw(M5Canvas& canvas, uint16_t colorFG, uint16_t colorBG) {
     // During thunder flash, invert colors for rain/wind (matches sirloin)

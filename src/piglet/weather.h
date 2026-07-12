@@ -39,6 +39,6 @@ bool isRaining();
 bool isDayTime();
 void setHMS(int h, int m);
 int getSolunaPos();
-void drawSun(M5Canvas& canvas,int x, int y, int radius);
+
 
 }  // namespace Weather
