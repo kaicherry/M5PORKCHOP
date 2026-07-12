@@ -139,7 +139,7 @@ void setHMS(int h, int m){
 
 int getSolunaPos(){
     //calc ( ( 12) *   currentH) +  20
-    return  (6 * (currentH > 0 ? currentH: 2) - 30)  + currentM + (currentM%5 == 0 ? 1:0); //(((12 * currentH) +20) + currentM) + scs;
+    return  (6 * (currentH > 0 ? currentH + 2: 2) - 30)  + currentM + (currentM%5 == 0 ? 1:0); //(((12 * currentH) +20) + currentM) + scs;
 }//////////////////
 static void spawnBird() {
     // Find inactive slot
@@ -803,16 +803,16 @@ bool isDayTime() {
 // Pixel-art circle: 3-band stepped rectangle (blocky puff)
 static void drawPixelPuff(M5Canvas& canvas, int cx, int cy, int r, uint16_t color) {
     if (r <= 1) {
-        canvas.fillRect(cx - 1, cy - 1, 3, 3, 0x001F);
+        canvas.fillRect(cx - 1, cy - 1, 3, 3, color);
         return;
     }
     int inset = (r + 1) / 2;
     // Wide center band
-    canvas.fillRect(cx - r, cy - r + inset, r * 2, r * 2 - inset * 2, 0xffff);
+    canvas.fillRect(cx - r, cy - r + inset, r * 2, r * 2 - inset * 2, color);
     // Narrower top row
-    canvas.fillRect(cx - r + inset, cy - r, (r - inset) * 2, inset, 0xffff);
+    canvas.fillRect(cx - r + inset, cy - r, (r - inset) * 2, inset, color);
     // Narrower bottom row
-    canvas.fillRect(cx - r + inset, cy + r - inset, (r - inset) * 2, inset, 0xffff);
+    canvas.fillRect(cx - r + inset, cy + r - inset, (r - inset) * 2, inset,color);
 }
 
 void drawClouds(M5Canvas& canvas, uint16_t colorFG) {
@@ -823,7 +823,7 @@ void drawClouds(M5Canvas& canvas, uint16_t colorFG) {
     for (int i = 0; i < MAX_CLOUDS; i++) {
         if (!clouds[i].active || clouds[i].scale == 0) continue;
         float scaleFactor = (float)clouds[i].scale / 255.0f;
-        drawColor = rainActive ? 0x4A4A : 0xFFFF;
+        drawColor = rainActive ? 0x4A49 : 0xFFFF;
         for (int p = 0; p < clouds[i].puffCount; p++) {
             int r = (int)((float)clouds[i].puffs[p].radius * scaleFactor * rainBoost + 0.5f);
             if (r < 1) continue;
