@@ -230,7 +230,7 @@ void Display::showLoot(const char* ssid) {
 
 extern Porkchop porkchop;
 
-void drawSun(M5Canvas& canvas,int x, int y, int radius) {
+void Display::drawSun(M5Canvas& canvas,int x, int y, int radius) {
     // 1. Color (RGB565)
     uint16_t sun = 0xFFE0; // Yellow
     uint16_t ray = 0xFD20; // Orange
@@ -391,6 +391,11 @@ void Display::update() {
         case PorkchopMode::WARHOG_MODE:
         case PorkchopMode::PIGGYBLUES_MODE:
             Avatar::draw(mainCanvas);
+                 if(!Weather::isRaining()) {drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
+                }else {
+                    mainCanvas.fillCircle(Weather::getSolunaPos() +5 ,15,10,0xE71C);
+                    mainCanvas.fillCircle(Weather::getSolunaPos(),10,10,COLOR_BG);
+                }
             Weather::drawBirds(mainCanvas, fg);
             Weather::drawClouds(mainCanvas, 0xffff);
             Weather::draw(mainCanvas, fg, bgColor);

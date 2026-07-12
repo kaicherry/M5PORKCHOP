@@ -96,6 +96,7 @@ public:
     static void showLevelUp(uint8_t oldLevel, uint8_t newLevel);  // RPG level up popup
 
     static bool useFullColor();
+    static void drawSun(M5Canvas& canvas,int x, int y, int radius);
     static PorkchopMode currentMode();
     // Mode-specific UI functions
     static void drawPigSyncDeviceSelect(M5Canvas& canvas);  // PigSync device selection UI
