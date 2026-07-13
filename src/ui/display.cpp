@@ -391,7 +391,7 @@ void Display::update() {
         case PorkchopMode::WARHOG_MODE:
         case PorkchopMode::PIGGYBLUES_MODE:
             Avatar::draw(mainCanvas);
-                 if(!Weather::isRaining()) {drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
+                 if(!Weather::isRaining() && Weather::isDayTime()) {drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
                 }else {
                     mainCanvas.fillCircle(Weather::getSolunaPos() +5 ,15,10,0xE71C);
                     mainCanvas.fillCircle(Weather::getSolunaPos(),10,10,COLOR_BG);

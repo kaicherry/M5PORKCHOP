@@ -1059,7 +1059,7 @@ void Avatar::drawFrame(M5Canvas& canvas, const char** frame, uint8_t lines, bool
 
     // Draw wave ripples behind pig (radio activity feedback)
     drawWaveRipples(canvas, faceRight, startX, startY);
-        if(!Weather::isRaining()) { Display::drawSun(canvas, Weather::getSolunaPos(), 20, 15);
+        if(!Weather::isRaining() && Weather::isDayTime()) { Display::drawSun(canvas, Weather::getSolunaPos(), 20, 15);
                 }else {
                    canvas.fillCircle(Weather::getSolunaPos() +5 ,15,10,0xE71C);
                     canvas.fillCircle(Weather::getSolunaPos(),10,10,COLOR_BG);
