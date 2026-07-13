@@ -817,6 +817,9 @@ void Porkchop::handleInput() {
                 case 'F':
                     setMode(PorkchopMode::XFER);
                     break;
+                case '0': // PIG DEMANDS overlay
+                    Avatar::setNinja(!Avatar::drkNt());
+                    break;
                 case '1': // PIG DEMANDS overlay
                     Display::showChallenges();
                     break;

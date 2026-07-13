@@ -35,8 +35,9 @@ public:
     static bool isFacingRight();  // Get current facing direction
     static bool isOnRightSide();  // Get screen position (for bubble placement)
     static bool isTransitioning();  // True during walk transition (hide bubble)
-    static int getCurrentX();  // Get current animated X position
-
+    static int getCurrentX();  // Get current animated X sition
+    static bool drkNt(); 
+    static void setNinja(bool onOff);
     // Phase 8: Intensity-based animation modifiers
     static void setMoodIntensity(int intensity);  // -100 to 100, affects blink/flip rates
 
@@ -82,6 +83,7 @@ public:
     // Night sky star system (RTC-based)
     static bool isNightTime();           // check rtc for night hours, 20:00-06:00
     static bool areStarsActive();        // stars currently visible?
+   
 
     // Walk wind-up animation (smooth slide for coast-back)
     static void startWindupSlide(int targetX, bool faceRight = false);

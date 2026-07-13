@@ -11,6 +11,7 @@
 AvatarState Avatar::currentState = AvatarState::NEUTRAL;
 bool Avatar::isBlinking = false;
 bool Avatar::earsUp = true;
+
 uint32_t Avatar::lastBlinkTime = 0;
 uint32_t Avatar::blinkInterval = 3000;
 int Avatar::moodIntensity = 0;  // Phase 8: -100 to 100
@@ -206,7 +207,8 @@ static void drawFilledPigLine(M5Canvas& canvas, const char* line, int x, int y,
     const int charW = 18;  // char width at text size 3
     const int charH = 22;  // line height
     int len = strlen(line);
-    fgColor = 0xFA97;
+    const char* darkparts = "(!).";
+    fgColor = Avatar::drkNt()? 0x1082: 0xFA97;
     // Find paren positions
     int openIdx = -1, closeIdx = -1;
     for (int i = 0; i < len; i++) {
@@ -216,13 +218,13 @@ static void drawFilledPigLine(M5Canvas& canvas, const char* line, int x, int y,
 
     if (openIdx < 0 || closeIdx <= openIdx) {
         // No parens — draw normally (ear line, etc.)
-        canvas.setTextColor(fgColor);
+        canvas.setTextColor(Avatar::drkNt() ? 0xffff: fgColor);
         canvas.drawString(line, x, y);
         return;
     }
 
     // Draw prefix chars (tail "z"/"~") in FG
-    canvas.setTextColor(fgColor);
+    canvas.setTextColor(Avatar::drkNt() ? 0xffff: fgColor);
     for (int i = 0; i < openIdx; i++) {
         canvas.drawChar(line[i], x + i * charW, y);
     }
@@ -255,24 +257,41 @@ static void drawFilledPigLine(M5Canvas& canvas, const char* line, int x, int y,
     if (lineIndex == 1) {
         // Head top bump — bridges gap between ears above
         int bw = 56;
-        canvas.fillRect(bodyCenter - bw / 2, y - 2, bw, 2, fgColor);
+        canvas.fillRect(bodyCenter - bw / 2, y - 2, bw, 2, Avatar::drkNt()? 0xffff: fgColor);
     } else if (lineIndex == 2) {
         // Body bottom fill — full width pixel-art belly line
         int fillLeft = parenLX + openCurve[6];     // Inside ( at bottom row
         int fillRight = parenRX + closeCurve[6];   // Inside ) at bottom row
-        canvas.fillRect(fillLeft, y + charH, fillRight - fillLeft, 2, fgColor);
+        canvas.fillRect(fillLeft, y + charH, fillRight - fillLeft, 2, Avatar::drkNt()? 0xffff: fgColor);
     }
 
     // Draw non-space interior chars in BG (holes/details)
-    canvas.setTextColor(0xFDB8);
+    canvas.setTextColor(Avatar::drkNt()  ?  0xffff: 0xFDB8);
     for (int i = openIdx + 1; i < closeIdx; i++) {
         if (line[i] != ' ') {
+            switch (line[i])
+            {
+            case '0':
+            Avatar::drkNt() ? canvas.drawChar(darkparts[3], x + i * charW, y) :canvas.drawChar(line[i], x + i * charW, y);
+                break;
+            
+            case '}':
+            Avatar::drkNt() ? canvas.drawChar(darkparts[2], x + i * charW, y) :canvas.drawChar(line[i], x + i * charW, y);
+                break;
+            
+            case '{':
+            Avatar::drkNt() ? canvas.drawChar(darkparts[0], x + i * charW, y) :canvas.drawChar(line[i], x + i * charW, y);
+                break;
+            default:
             canvas.drawChar(line[i], x + i * charW, y);
+                break;
+            }
+            
         }
     }
 
     // Draw ) in FG
-    canvas.setTextColor(fgColor);
+    canvas.setTextColor(Avatar::drkNt() ? 0xffff:fgColor);
     canvas.drawChar(')', x + closeIdx * charW, y);
 
     // Draw suffix chars (tail "z"/"~") in FG
@@ -313,7 +332,7 @@ static uint32_t flipInterval = 5000;
 static uint32_t lastLookTime = 0;
 static uint32_t lookInterval = 2000;  // Look around every 2-5s when stationary
 bool Avatar::onRightSide = false;  // Track which side of screen pig is on (class static)
-
+bool isRogue = false;
 // --- DERPY STYLE with direction ---
 // Right-looking frames (snout 00 on right side of face, pig looks RIGHT)
 const char* AVATAR_NEUTRAL_R[] = {
@@ -495,6 +514,11 @@ void Avatar::blink() {
 void Avatar::wiggleEars() {
     earsUp = !earsUp;
 }
+void Avatar::setNinja(bool onOff){
+    isRogue = onOff;
+}
+
+bool Avatar::drkNt() {return isRogue;};
 
 void Avatar::sniff() {
     if (!isSniffing) {
@@ -2251,7 +2275,7 @@ static void drawCircleRing(M5Canvas& canvas, int16_t cx, int16_t cy,
             } else {
                 if (px < 0 || px > maxPxX || py < 0 || py > maxPxY) continue;
             }
-            canvas.fillRect(px, py, PX, PX, color);
+            canvas.fillRect(px, py, PX, PX, Avatar::drkNt() ?0: color);
         }
         gy++;
         if (d < 0) { d += 2 * gy + 1; }
