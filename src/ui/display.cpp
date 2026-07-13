@@ -376,7 +376,7 @@ void Display::update() {
             Avatar::draw(mainCanvas);
               if(Weather::isDayTime()) {
                  if(!Weather::isRaining()) drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
-                }else {
+                }else if(!Weather::isDayTime()){
                     mainCanvas.fillCircle(Weather::getSolunaPos() +5 ,15,10,0xE71C);
                     mainCanvas.fillCircle(Weather::getSolunaPos(),10,10,COLOR_BG);
                 }
@@ -392,7 +392,7 @@ void Display::update() {
         case PorkchopMode::PIGGYBLUES_MODE:
             Avatar::draw(mainCanvas);
                  if(!Weather::isRaining() && Weather::isDayTime()) {drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
-                }else {
+                }else if(!Weather::isDayTime()){
                     mainCanvas.fillCircle(Weather::getSolunaPos() +5 ,15,10,0xE71C);
                     mainCanvas.fillCircle(Weather::getSolunaPos(),10,10,COLOR_BG);
                 }
