@@ -101,6 +101,8 @@ bool requestSaeOverflow(const uint8_t* bssid);
 bool requestChannelView();                      // Continuous channel utilization
 bool requestPacketMonitor(uint8_t channel);     // PPS on specific channel
 bool requestImportNewestHandshake();            // Pull newest C5 /sdcard/lab/handshakes/*.pcap to Porkchop SD
+bool requestBlackout();                             // Stop current C5 operation
+bool requestTheDogs();   
 void requestStop();                             // Stop current C5 operation
 
 // ============================================================================

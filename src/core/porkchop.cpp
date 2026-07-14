@@ -460,6 +460,13 @@ void Porkchop::setMode(PorkchopMode mode) {
             SDLog::log("PORK", "Mode: OINK");
             OinkMode::start();
             break;
+        case PorkchopMode::BLACKOUT_MODE:
+            Avatar::setState(AvatarState::HUNTING);
+            Display::notify(NoticeKind::STATUS, "SHINOBI SMOKE", 5000, NoticeChannel::TOP_BAR);
+            Avatar::waveRipple(WaveMode::OUTGOING);
+            SDLog::log("PORK", "Mode: BLACKOUT_MODE");
+            //OinkMode::start();
+            break;
         case PorkchopMode::DNH_MODE:
             Avatar::setState(AvatarState::NEUTRAL);  // Calm, passive state
             SDLog::log("PORK", "Mode: DO NO HAM");
@@ -818,7 +825,14 @@ void Porkchop::handleInput() {
                     setMode(PorkchopMode::XFER);
                     break;
                 case '0': // PIG DEMANDS overlay
-                    Avatar::setNinja(!Avatar::drkNt());
+                    if(currentMode == PorkchopMode::BLACKOUT_MODE){
+                        JanusHog::requestStop();
+                        Avatar::setNinja(false);
+                        setMode(PorkchopMode::IDLE);
+                    }
+                    Avatar::setNinja(JanusHog::requestBlackout());
+                    if(Avatar::drkNt()) setMode(PorkchopMode::BLACKOUT_MODE);
+                    
                     break;
                 case '1': // PIG DEMANDS overlay
                     Display::showChallenges();

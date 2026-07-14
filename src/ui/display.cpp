@@ -254,7 +254,6 @@ void Display::drawSun(M5Canvas& canvas,int x, int y, int radius) {
 
         //Draw
        canvas.fillTriangle(bx1, by1, bx2, by2, tx, ty, ray);
-       Serial.println("SunCalled");
     }
 
     // 3. Draw the center circle (drawn last to overlay and clean up the ray bases)
@@ -387,6 +386,7 @@ void Display::update() {
             break;
 
         case PorkchopMode::OINK_MODE:
+        case PorkchopMode::BLACKOUT_MODE:
         case PorkchopMode::DNH_MODE:
         case PorkchopMode::WARHOG_MODE:
         case PorkchopMode::PIGGYBLUES_MODE:

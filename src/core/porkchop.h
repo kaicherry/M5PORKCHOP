@@ -32,6 +32,7 @@ enum class PorkchopMode : uint8_t {
     JANUS_HOG_MODE = 22,   // Janus Hog (ESP32-C5) UART coprocessor status
     SD_FORMAT = 23,        // SD card format utility
     CHARGING = 24,         // Low power charging mode
+    BLACKOUT_MODE = 25,
 
     // Legacy aliases (deprecated; remove in v0.2.0)
     CAPTURES = HASHES,

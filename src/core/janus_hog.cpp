@@ -800,6 +800,23 @@ bool JanusHog::requestImportNewestHandshake() {
     return true;
 }
 
+bool JanusHog::requestBlackout() {
+    if (!isConnected()) return false;
+    // Avoid disrupting an active attack sequence.
+    if (state == C5State::ATTACKING || currentOp == C5Op::HANDSHAKE || currentOp == C5Op::SAE_OVERFLOW || currentOp == C5Op::BLACKOUT) {
+        Display::notify(NoticeKind::STATUS, "C5 BUSY (ATTACK)", 2000, NoticeChannel::TOP_BAR);
+        return false;
+    }
+    currentOp = C5Op::BLACKOUT;
+    sendCommand("start_blackout");
+    return true;
+}
+
+bool JanusHog::requestTheDogs() {
+    if (!isConnected()) return false;
+    return true;
+}
+
 void JanusHog::requestStop() {
     if (state == C5State::OFF || state == C5State::DISCONNECTED) return;
     sendCommand("stop");
