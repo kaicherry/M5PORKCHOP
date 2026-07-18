@@ -22,6 +22,7 @@
 #include "../modes/do_no_ham.h"
 #include "../modes/warhog.h"
 #include "../modes/piggy_blues.h"
+#include "../modes/pork_patrol.h"
 #include "../modes/spectrum.h"
 #include "../modes/pigsync_mode.h"
 #include "../modes/bacon.h"
@@ -49,6 +50,7 @@ static const char* modeToString(PorkchopMode mode) {
         case PorkchopMode::OINK_MODE: return "OINK";
         case PorkchopMode::DNH_MODE: return "DNH";
         case PorkchopMode::WARHOG_MODE: return "WARHOG";
+        case PorkchopMode::PORK_PATROL: return "PORKPATROL";
         case PorkchopMode::PIGGYBLUES_MODE: return "PIGGYBLUES";
         case PorkchopMode::SPECTRUM_MODE: return "SPECTRUM";
         case PorkchopMode::MENU: return "MENU";
@@ -231,6 +233,7 @@ void Porkchop::init() {
             case 20: setMode(PorkchopMode::SD_FORMAT); break;
             case 21: setMode(PorkchopMode::CHARGING); break;
             case 22: setMode(PorkchopMode::JANUS_HOG_MODE); break;
+            case 26: setMode(PorkchopMode::PORK_PATROL); break;
         }
     });
 
@@ -366,6 +369,9 @@ void Porkchop::setMode(PorkchopMode mode) {
         case PorkchopMode::PIGGYBLUES_MODE:
             PiggyBluesMode::stop();
             break;
+         case PorkchopMode::PORK_PATROL:
+            PorkPatrol::stop();
+            break;
         case PorkchopMode::SPECTRUM_MODE:
             SpectrumMode::stop();
             break;
@@ -460,6 +466,13 @@ void Porkchop::setMode(PorkchopMode mode) {
             SDLog::log("PORK", "Mode: OINK");
             OinkMode::start();
             break;
+        case PorkchopMode::PORK_PATROL:
+            Avatar::setState(AvatarState::HUNTING);
+            Display::notify(NoticeKind::STATUS, "HUNTING FLOCK OF ALPRGULLZ", 5000, NoticeChannel::TOP_BAR);
+            Avatar::waveRipple(WaveMode::OUTGOING);
+            SDLog::log("PORK", "Mode: PORK_PATROL");
+            PorkPatrol::start();
+            break;
         case PorkchopMode::BLACKOUT_MODE:
             Avatar::setState(AvatarState::HUNTING);
             Display::notify(NoticeKind::STATUS, "SHINOBI SMOKE", 5000, NoticeChannel::TOP_BAR);
@@ -479,7 +492,7 @@ void Porkchop::setMode(PorkchopMode mode) {
             // Disable ML/Enhanced features for heap savings
             {
                 auto mlCfg = Config::ml();
-                mlCfg.enabled = false;
+                mlCfg.enabled = true;
                 mlCfg.collectionMode = MLCollectionMode::BASIC;
                 Config::setML(mlCfg);
             }
@@ -844,6 +857,12 @@ void Porkchop::handleInput() {
                 case 'C':
                     setMode(PorkchopMode::CHARGING);
                     break;
+                case 'a': // ALPRs...ugh
+                case 'A':
+                    setMode(PorkchopMode::PORK_PATROL);
+                    Mood::setStatusMessage( "HUNTING FLOCK OF ALPRs");
+                     Display::notify(NoticeKind::STATUS, "HUNTING FLOCK OF ALPRs", 0, NoticeChannel::TOP_BAR); 
+                    break;
             }
         }
         yield(); // Allow other tasks to run after processing all keys
@@ -942,6 +961,10 @@ void Porkchop::updateMode() {
             break;
         case PorkchopMode::WARHOG_MODE:
             WarhogMode::update();
+            break;
+            case PorkchopMode::PORK_PATROL:
+            Serial.println("PATUPDT");
+            PorkPatrol::update();
             break;
         case PorkchopMode::PIGGYBLUES_MODE:
             PiggyBluesMode::update();

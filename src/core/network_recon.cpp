@@ -1174,10 +1174,18 @@ void injectExternal(const uint8_t* bssid, const char* ssid, int8_t rssi,
 }
 
 void enterCritical() {
+   Serial.println("IN::CRIT");
+    if (&vectorMux == nullptr) {
+    // Log the error or handle it safely to prevent the crash
+     Serial.println("NOVMUX"); 
+    NetworkRecon::exitCritical();
+    return; 
+  }
     taskENTER_CRITICAL(&vectorMux);
 }
 
 void exitCritical() {
+   // Serial.println("EX::CRIT");
     taskEXIT_CRITICAL(&vectorMux);
 }
 

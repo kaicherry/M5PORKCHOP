@@ -33,7 +33,7 @@ enum class PorkchopMode : uint8_t {
     SD_FORMAT = 23,        // SD card format utility
     CHARGING = 24,         // Low power charging mode
     BLACKOUT_MODE = 25,
-
+    PORK_PATROL = 26,
     // Legacy aliases (deprecated; remove in v0.2.0)
     CAPTURES = HASHES,
     ACHIEVEMENTS = BADGES,

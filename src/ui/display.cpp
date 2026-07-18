@@ -18,6 +18,7 @@
 #include "../piglet/weather.h"
 #include "../modes/oink.h"
 #include "../modes/do_no_ham.h"
+#include "../modes/pork_patrol.h"
 #include "../modes/warhog.h"
 #include "../modes/piggy_blues.h"
 #include "../modes/spectrum.h"
@@ -348,6 +349,7 @@ void Display::update() {
         mode == PorkchopMode::DNH_MODE ||
         mode == PorkchopMode::WARHOG_MODE ||
         mode == PorkchopMode::PIGGYBLUES_MODE ||
+        mode == PorkchopMode::PORK_PATROL ||
         mode == PorkchopMode::BACON_MODE);
 
     // Draw main content based on mode - reset all canvas state
@@ -389,6 +391,18 @@ void Display::update() {
         case PorkchopMode::BLACKOUT_MODE:
         case PorkchopMode::DNH_MODE:
         case PorkchopMode::WARHOG_MODE:
+        case PorkchopMode::PORK_PATROL:
+        Avatar::draw(mainCanvas);
+                 if(!Weather::isRaining() && Weather::isDayTime()) {drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
+                }else if(!Weather::isDayTime()){
+                    mainCanvas.fillCircle(Weather::getSolunaPos() +5 ,15,10,0xE71C);
+                    mainCanvas.fillCircle(Weather::getSolunaPos(),10,10,COLOR_BG);
+                }
+            Weather::drawBirds(mainCanvas, fg);
+            Weather::drawClouds(mainCanvas, 0xffff);
+            Weather::draw(mainCanvas, fg, bgColor);
+            Mood::draw(mainCanvas);
+            break;
         case PorkchopMode::PIGGYBLUES_MODE:
             Avatar::draw(mainCanvas);
                  if(!Weather::isRaining() && Weather::isDayTime()) {drawSun(mainCanvas, Weather::getSolunaPos(), 20, 15);
@@ -811,6 +825,7 @@ void Display::drawTopBar() {
     char modeBuf[40];
     modeBuf[0] = '\0';
     uint16_t modeColor = fg;
+    modeColor = useFullColor ? 0x27E0 : fg;
 
     switch (mode) {
         case PorkchopMode::IDLE:
@@ -818,7 +833,6 @@ void Display::drawTopBar() {
             break;
         case PorkchopMode::OINK_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "OINKS");
-            modeColor = useFullColor ? 0xF92A : fg;
             break;
         case PorkchopMode::DNH_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "DONOHAM");
@@ -826,15 +840,15 @@ void Display::drawTopBar() {
             break;
         case PorkchopMode::WARHOG_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "SGT WARHOG");
-            modeColor = useFullColor ? 0x27E0 : fg;
             break;
         case PorkchopMode::PIGGYBLUES_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "BLUES");
-            modeColor = useFullColor ? 0x001F : fg;
+            break;
+            case PorkchopMode::PORK_PATROL:
+            snprintf(modeBuf, sizeof(modeBuf), "PORK PATROL");
             break;
         case PorkchopMode::SPECTRUM_MODE:
             snprintf(modeBuf, sizeof(modeBuf), "HOG ON SPECTRUM");
-            modeColor = useFullColor ? 0xD81F : fg;
             break;
         case PorkchopMode::MENU:
             snprintf(modeBuf, sizeof(modeBuf), "MENU");
@@ -1079,8 +1093,50 @@ void Display::drawBottomBar() {
     statsBuf[0] = '\0';
     const char* statsStr = "";
     bool showHealthBar = false;
-    
-    if (mode == PorkchopMode::WARHOG_MODE) {
+   if(mode == PorkchopMode::PORK_PATROL) {
+      bool gpsFix = GPS::hasFix() || JanusHog::hasC5GPSFix();
+      GPSData gps = GPS::hasFix() ? GPS::getData() : JanusHog::getC5GPSData();
+        uint8_t flockCount=0, bwcCount=0;
+        for (uint8_t i=0; i<PorkPatrol::getHitCount(); i++)
+          (PorkPatrol::getHitType(i)==1 ? bwcCount : flockCount)++;
+
+        char status[48];
+        if (PorkPatrol::getHitCount()==0)
+          snprintf(status,sizeof(status),"sniffing... [%u nets]", NetworkRecon::getNetworkCount());
+        else
+          snprintf(status,sizeof(status),"FLOCK:%u  BODYCAM:%u  TOTAL:%u", flockCount, bwcCount, PorkPatrol::getHitCount());
+        // dst.setTextDatum(TC_DATUM);
+        // dst.drawString(status, DISPLAY_W/2, y); y+=dy+2;
+        // dst.setTextDatum(TL_DATUM);
+        // dst.drawLine(0, y, DISPLAY_W, y,fg); y+=4;
+
+        if (PorkPatrol::getHitCount()==0) {
+        //   dst.setTextDatum(TC_DATUM);
+        Display::notify(NoticeKind::STATUS,"the pig is watching");
+        Display::showToast("no feds detected nearby");
+        Display::notify(NoticeKind::STATUS,"oink oink oink...");
+        //   dst.drawString("no feds detected nearby", DISPLAY_W/2, y+6); y+=dy;
+        //   dst.drawString("oink oink oink...", DISPLAY_W/2, y+6);
+        } else {
+          for (uint8_t i=0; i<PorkPatrol::getHitCount() && i<5; i++) {
+            char _ssid[33]={0}; uint8_t _mac[6]={0};
+            PorkPatrol::getHitSSID(i,_ssid,32); PorkPatrol::getHitMAC(i,_mac);
+            uint8_t _type=PorkPatrol::getHitType(i); int8_t _rssi=PorkPatrol::getHitRssi(i);
+            char mac[10]; snprintf(mac,sizeof(mac),"%02X%02X%02X",_mac[3],_mac[4],_mac[5]);
+            const char* tag = (_type==1)?"[BWC]":"[CAM]";
+            char line[40]; snprintf(line,sizeof(line),"%s %.12s [%s] %ddBm",tag,_ssid[0]?_ssid:"??",mac,_rssi);
+            //dst.drawString(line, 4, y); y+=dy;
+          }
+          if (gpsFix) {
+            char gl[40]; snprintf(gl,sizeof(gl),"GPS:%.4f,%.4f",gps.latitude,gps.longitude);
+            Display::notify(NoticeKind::STATUS,gl);
+            //dst.setTextDatum(TC_DATUM);
+           // dst.drawString(gl, DISPLAY_W/2, yOff+MAIN_H-14);
+          }
+        }
+        
+        Avatar::draw(mainCanvas);
+      } else if (mode == PorkchopMode::WARHOG_MODE) {
         // WARHOG: show unique networks, saved, distance, GPS info
         uint32_t unique = WarhogMode::getTotalNetworks();
         uint32_t saved = WarhogMode::getSavedCount();
