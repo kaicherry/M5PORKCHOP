@@ -473,9 +473,9 @@ void Display::update() {
             break;
         case PorkchopMode::JANUS_HOG_MODE:
         {
-            mainCanvas.fillSprite(bg);
+            mainCanvas.fillSprite(0);
             mainCanvas.setTextSize(1);
-            mainCanvas.setTextColor(fg);
+            mainCanvas.setTextColor(0x27E0);
             mainCanvas.setTextDatum(top_left);
 
             char c5status[24];

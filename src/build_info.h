@@ -1,5 +1,5 @@
 // Auto-generated build info
 #pragma once
-#define BUILD_TIME "2026-07-12T19:13:38.028047"
+#define BUILD_TIME "2026-07-28T18:38:33.315277"
 #define BUILD_VERSION "0.1.8c-PSTH"
-#define BUILD_COMMIT "8e29d39"
+#define BUILD_COMMIT "3975413"

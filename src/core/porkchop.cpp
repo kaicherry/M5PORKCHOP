@@ -551,6 +551,7 @@ void Porkchop::setMode(PorkchopMode mode) {
         case PorkchopMode::JANUS_HOG_MODE:
             Avatar::setState(AvatarState::EXCITED);
             SDLog::log("PORK", "Mode: JANUS_HOG");
+            
             if (JanusHog::isConnected()) {
                 // Trigger initial scan when entering mode
                 if (JanusHog::getScanCount() == 0) {
