@@ -18,6 +18,9 @@
 #include "../core/wsl_bypasser.h"
 #include "../core/sdlog.h"
 #include "../core/sd_layout.h"
+#include "../core/flock_detect.h"
+#include "../core/flock_log.h"
+#include "../audio/sfx.h"
 #include "../core/xp.h"
 #include "../ui/display.h"
 #include "../piglet/mood.h"
@@ -190,6 +193,69 @@ static void writeCSVField(File& f, const char* ssid) {
     f.print("\"");
 }
 
+// === FLOCK DETECTION (passive counter-surveillance) =========================
+// WARHOG uses active scanning, so we match each scanned AP against the Flock
+// signature table. Hits are logged to a separate flock.csv (deflock.me-ready);
+// the AP is already captured in the WiGLE export via the normal path, so both
+// sinks get populated. Default alert threshold is Medium (see FlockDetect).
+static flockdet::FlockDetect g_flock;
+static char currentFlockFilename[128] = {0};
+
+static bool ensureFlockFileReady() {
+    if (currentFlockFilename[0] != '\0') return true;
+
+    const char* dir = SDLayout::wardrivingDir();
+    if (!SD.exists(dir)) {
+        if (!SD.mkdir(dir)) return false;
+    }
+
+    GPSData g = GPS::getData();
+    if (g.date > 0 && g.time > 0) {
+        uint8_t day = g.date / 10000, month = (g.date / 100) % 100, year = g.date % 100;
+        uint8_t hour = g.time / 1000000, minute = (g.time / 10000) % 100, second = (g.time / 100) % 100;
+        snprintf(currentFlockFilename, sizeof(currentFlockFilename),
+                 "%s/flock_20%02d%02d%02d_%02d%02d%02d.csv",
+                 dir, year, month, day, hour, minute, second);
+    } else {
+        snprintf(currentFlockFilename, sizeof(currentFlockFilename),
+                 "%s/flock_%lu_%04X.csv", dir, millis(), (uint16_t)esp_random());
+    }
+
+    File f = openFileWithRetry(currentFlockFilename, FILE_WRITE);
+    if (!f) { currentFlockFilename[0] = '\0'; return false; }
+    f.print(flockdet::flockCsvHeader());
+    f.close();
+    return true;
+}
+
+static void appendFlockEntry(const flockdet::Detection& det, const GPSData& gps, bool hasGPS) {
+    if (!ensureFlockFileReady()) return;
+
+    flockdet::GpsFix fix;
+    if (hasGPS) {
+        fix.lat  = gps.latitude;
+        fix.lon  = gps.longitude;
+        fix.altM = (float)gps.altitude;
+        fix.accM = (float)(gps.hdop > 0 ? gps.hdop * 5.0 : 10.0);
+        if (gps.date > 0 && gps.time > 0) {
+            uint8_t day = gps.date / 10000, month = (gps.date / 100) % 100, year = gps.date % 100;
+            uint8_t hour = gps.time / 1000000, minute = (gps.time / 10000) % 100, second = (gps.time / 100) % 100;
+            snprintf(fix.utc, sizeof(fix.utc), "20%02d-%02d-%02dT%02d:%02d:%02dZ",
+                     year, month, day, hour, minute, second);
+            fix.valid = true;
+        }
+    }
+
+    char line[192];
+    int n = flockdet::flockCsvRow(line, sizeof(line), det, fix);
+    if (n <= 0) return;
+
+    File f = openFileWithRetry(currentFlockFilename, FILE_APPEND);
+    if (!f) return;
+    f.print(line);
+    f.close();
+}
+
 void WarhogMode::init() {
     totalNetworks = 0;
     openNetworks = 0;
@@ -215,6 +281,8 @@ void WarhogMode::start() {
     savedCount = 0;
     currentFilename[0] = '\0';
     currentWigleFilename[0] = '\0';
+    currentFlockFilename[0] = '\0';
+    g_flock.setAlertThreshold(flockdet::Confidence::Medium);
 
     resetSeenTracking();
     seedCapturedFromOink();
@@ -778,7 +846,25 @@ void WarhogMode::processScanResults() {
                 XP::addXP(XPEvent::NETWORK_FOUND);
                 break;
         }
-        
+
+        // --- Passive Flock/Raven detection (counter-surveillance) --------
+        // Runs once per unique AP this session (dedup handled by the bloom
+        // filter above). Hits go to flock.csv; the AP itself is already in the
+        // WiGLE export via the normal path below.
+        {
+            flockdet::Detection fdet = g_flock.inspectScanResult(bssidPtr, ssid, rssi, channel);
+            if (fdet.hit()) {
+                if (Config::isSDAvailable()) appendFlockEntry(fdet, gpsData, hasGPS);
+                if (fdet.kind == flockdet::DeviceKind::RavenDetector) {
+                    Display::showToast("RAVEN NEARBY");
+                    SFX::play(SFX::YOU_DIED);   // distinct grave alarm: gunshot detector
+                } else {
+                    Display::showToast("FLOCK CAM NEAR");
+                    SFX::play(SFX::SIREN);      // loud police-siren alarm: camera found
+                }
+            }
+        }
+
         // Write to files based on GPS status
         if (Config::isSDAvailable()) {
             if (hasGPS) {
